@@ -241,6 +241,19 @@ For Action/runtime-only changes, parse the workflow YAML, compare workflow struc
 
 Nuvio validation retains its pull-request, main-push and manual triggers. The #247 grouping above supersedes the original monolithic CI execution. Maintenance-validation architecture remains deferred: maintenance commits made with `GITHUB_TOKEN` do not trigger push-based Nuvio validation, and Pages still uses its existing independent push and maintenance-completion triggers. The runtime upgrade does not close that coverage gap.
 
+## Genre Structure progressive UI
+
+The existing Source-edit browser runner has a focused local Genre path. It reuses the existing Genre hierarchy and New Folder scenarios at 360/384/393/402/412/899/900/901/1280px, plus the progressive state/keyboard scenarios at phone and desktop widths, 200% root text, short height and forced colours. It checks all four IDs reaching Create, remembered arrangements, effective-media availability/invalidation, composite fallback/restoration, Appearance preservation, invalid-name recovery without fake counts, retained Collection-grouping and Appearance totals without Structure Folder counts or a bottom result container, captured safe destination titles, radio/disclosure keyboard behavior, partial-card focus, wrapping, illustrative rail/tab/direct-grid relationships, one connected Separate Collections Home example with vertically stacked rails, compact landscape tile proportions and centred whole-word labels, Together-only Tabbed Grid guidance, and desktop/mobile placement, computed card-style parity with the real Collection layout controls, decorative previews without tab stops, permanent Combined Series helper and Current placement default/custom/fallback summaries including standalone concepts, restored original pill sizing and keyboard focus, Configure disclosure Enter/Space and collapsed-action tab order, removed redundant Configure summary, single scroll ownership and sticky actions. Existing pure tests continue to own planner/output and atomicity contracts. The focused runner blocks and fails any external request; it does not exercise or replace live Preview/service integration.
+
+```powershell
+$env:TMDB_GENRE_STRUCTURE_ONLY = '1'
+node --test --test-name-pattern='mounted Genre (hierarchy|progressive|New Folder)' tests/builder-source-edit-mounted.test.mjs
+Remove-Item Env:TMDB_GENRE_STRUCTURE_ONLY
+node --test tests/builder-genre-hierarchy.test.mjs tests/builder-genre-hierarchy-ui.test.mjs tests/builder-choice-presentation-contract.test.mjs tests/builder-action-language.test.mjs
+```
+
+The same scenarios remain in ordinary full Source validation. Optional existing `TMDB_204_SCREENSHOTS` captures review images outside Git; remove temporary review artifacts afterward. Owner visual acceptance and physical-device checks remain separate from mounted evidence. No CI routing/workflow change accompanies this selector; production CSS still requires full hosted PR validation under the existing routing rules.
+
 ## Guided creation presentation (#230)
 
 `tests/builder-choice-presentation-contract.test.mjs` owns the shared stage-intro and semantic choice contract. Run it with the affected family UI tests for all nine guided families and the shared Add/Edit controls; these source/static-render checks do not claim live integration evidence.

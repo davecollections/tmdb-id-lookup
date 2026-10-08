@@ -449,12 +449,19 @@ export async function runGuidedPresentationScenario(helpers, { family, forcedCol
 			if (family === "genres") {
 				const structure = nameRecovery.structure ?? "genre-folders";
 				const alternative = structure === "media-folders" ? "genre-folders" : "media-folders";
+				if (structure === "separate-media-collections") {
+					await click(check(dialog().querySelector('input[name="genre-hierarchy-collection-grouping"][value="together"]'), "Together Genre grouping"));
+				}
 				await click(dialog().querySelector(`input[value="${alternative}"]`)); await next();
 				check(fields().length === 1, "alternate structure duplicated name fields");
 				await click(button("Back")); await click(dialog().querySelector(`input[value="${structure}"]`));
 			}
 			await next();
 			check(fields().every((node, index) => node.value === expected[index]), "corrected names did not survive Back/return");
+			if (family === "genres") {
+				check(fields().length === expected.length, "restored Genre structure lost Collection-name fields");
+				check(serializedValue(controller) === before && controller.getState().revision === revision, "Genre name recovery mutated project before Create");
+			}
 			await next();
 			if (family === "advanced-discover") { await next(); await next(); }
 			if (family === "trakt-lists") { await stage(4, "Appearance", "appearance"); await next(); }

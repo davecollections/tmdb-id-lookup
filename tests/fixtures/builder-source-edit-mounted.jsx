@@ -19,6 +19,7 @@ import { desktopExpandedSource, roundTripSourceCases } from "./nuvio-desktop-rou
 import { createCollectionExportPayload } from "../../builder/src/ui/export-collections.js";
 import {
 	applyGenreHierarchyPlan,
+	createGenreHierarchyPlan,
 	applyTmdbListHierarchyPlan,
 	createTmdbListSourceBundle,
 	applyDecadesHierarchyPlan,
@@ -881,6 +882,80 @@ function genreSummaryState(dialog, expectedCount) {
 	};
 }
 
+function genreStructureEvidence(dialog) {
+	const section = dialog.querySelector(".genre-hierarchy-structure");
+	const cards = [...section.querySelectorAll(".genre-structure-choice-grid [data-choice-id]")];
+	const collectionCards = [...section.querySelectorAll(".genre-collection-choice-grid [data-choice-id]")];
+	const examples = [...section.querySelectorAll(".genre-structure-example")];
+	const owner = dialog.querySelector(".add-source-scroll");
+	const footer = dialog.querySelector(".add-source-actions").getBoundingClientRect();
+	const text = [...section.querySelectorAll("strong, small, .genre-structure-example span, .genre-structure-counts, .genre-composite-helper, .genre-composite-current h5, .genre-composite-current-summary p, .genre-composite-current-summary li")].filter(node => node.childElementCount === 0 && node.textContent.trim());
+	return {
+		stage: dialog.querySelector(".genre-hierarchy-form").dataset.genreHierarchyStage,
+		headingFocused: document.activeElement === section.querySelector("#genre-hierarchy-structure-title"),
+		introCopy: section.querySelector(":scope > .studio-configure-helper").textContent,
+		questions: [...section.querySelectorAll(":scope > fieldset > legend")].map(node => node.textContent),
+		folderIds: cards.map(card => card.dataset.choiceId),
+		collectionIds: collectionCards.map(card => card.dataset.choiceId),
+		selectedStructure: section.querySelector('input[name="genre-hierarchy-structure"]:checked')?.value ?? section.querySelector('input[name="genre-hierarchy-collection-grouping"]:checked')?.value,
+		structureCounts: Object.fromEntries(cards.map(card => [card.dataset.choiceId, card.querySelector(".genre-structure-counts")?.textContent ?? null])),
+		structureCopy: Object.fromEntries(cards.map(card => [card.dataset.choiceId, { title: card.querySelector("strong").textContent, description: card.querySelector("small").textContent }])),
+		resultAbsent: !section.querySelector(".genre-structure-result"),
+		collectionCounts: Object.fromEntries(collectionCards.map(card => [card.dataset.choiceId, card.querySelector(".genre-structure-counts")?.textContent ?? null])),
+		compositeInformation: [...section.querySelectorAll(".genre-composite-placement")].every(node => {
+			const helper = node.querySelector(".genre-composite-helper"), current = node.querySelector(".genre-composite-current"), disclosure = node.querySelector("details");
+			return helper?.checkVisibility() && current?.checkVisibility() && current.querySelector("h5")?.textContent === "Current placement" && !disclosure.contains(helper) && !disclosure.contains(current) && helper.nextElementSibling === current && current.nextElementSibling !== null && !disclosure.textContent.includes("Some Series genres combine");
+		}),
+		examplesLabelled: (cards.length ? section.querySelector(".genre-structure-example-note")?.textContent === "Examples show Tabbed Grid. Choose your layout in Appearance." : !section.querySelector(".genre-structure-example-note")) && examples.every(node => node.getAttribute("aria-hidden") === "true"),
+		illustrativeOutput: examples.every(node => {
+			const id = node.dataset.genreExample;
+			const titles = [...node.querySelectorAll(".genre-example-title")].map(entry => entry.textContent);
+			const tabs = [...node.querySelectorAll(".source-layout-preview-tab-bar > span")].map(entry => entry.textContent);
+			const tiles = node.querySelectorAll(".source-layout-preview-poster-grid > span");
+			if (node.querySelector("button, input, a, [tabindex], [role=tab]")) return false;
+			if (id === "separate-media-collections") {
+				const home = node.querySelector(".genre-example-home-groups"), rails = [...home.querySelectorAll(":scope > .genre-example-rail")];
+				return titles.join("|") === "Movie Genres|Series Genres" && node.querySelectorAll(".genre-example-home-groups").length === 1 && home.querySelector(".genre-example-home-context")?.textContent === "Nuvio Home" && rails.length === 2 && tabs.length === 0
+					&& rails.map(rail => [...rail.querySelectorAll(".genre-example-cards > span")].map(card => card.textContent).join("|")).join(";") === "Action|Adventure|Comedy;Action & Adventure|Animation|Comedy"
+					&& rails[1].getBoundingClientRect().top >= rails[0].getBoundingClientRect().bottom && rails.every(rail => getComputedStyle(rail).borderTopStyle === "none")
+					&& [...home.querySelectorAll(".genre-example-cards > span")].every(card => {
+						const range = document.createRange(), rect = card.getBoundingClientRect(), style = getComputedStyle(card);
+						range.selectNodeContents(card);
+						const label = range.getBoundingClientRect();
+						return Math.abs(rect.width / rect.height - 16 / 9) < 0.04 && rect.width <= 7 * parseFloat(getComputedStyle(document.documentElement).fontSize) + 1
+							&& style.textAlign === "center" && Math.abs((rect.top + rect.bottom - label.top - label.bottom) / 2) <= parseFloat(style.lineHeight) * 0.2
+							&& Math.abs((rect.left + rect.right - label.left - label.right) / 2) <= 2
+							&& [...card.textContent.matchAll(/\S+/g)].every(word => {
+							range.setStart(card.firstChild, word.index); range.setEnd(card.firstChild, word.index + word[0].length);
+							return range.getClientRects().length === 1;
+						});
+					});
+			}
+			if (titles[0] !== "Genres" || tiles.length !== 6) return false;
+			if (id === "genre-folders") return titles[1] === "Animation" && (!tabs.length || tabs.join("|") === "Movies|Series");
+			if (id === "media-folders") return ["Movies", "Series"].includes(titles[1]) && tabs.join("|") === "Animation|Comedy";
+			return id === "separate-media-genre-folders" && titles[1].startsWith("Animation ") && tabs.length === 0;
+		}),
+		diagramPosition: cards.every(card => {
+			const diagram = card.querySelector(".genre-structure-example").getBoundingClientRect();
+			const title = card.querySelector("strong").getBoundingClientRect();
+			const description = card.querySelector("small").getBoundingClientRect();
+			return innerWidth <= 700 ? diagram.top >= description.bottom : diagram.left >= title.right;
+		}),
+		originalPills: [...section.querySelectorAll(".genre-composite-details[open] .studio-sort-choice-row label")].every(node => {
+			const style = getComputedStyle(node), textStyle = getComputedStyle(node.querySelector("span"));
+			return style.borderRadius === "999px" && style.padding === "7px 12px" && style.minHeight === "36px" && Math.abs(parseFloat(textStyle.fontSize) - parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.68) < 0.01 && node.scrollWidth <= node.clientWidth + 1;
+		}),
+		nativeGroups: [...cards, ...collectionCards].every(card => card.querySelector('input[type="radio"].visually-hidden')),
+		readable: text.every(node => parseFloat(getComputedStyle(node).fontSize) >= parseFloat(getComputedStyle(document.documentElement).fontSize) * 0.7 - 0.01 && getComputedStyle(node).whiteSpace !== "nowrap" && node.scrollWidth <= node.clientWidth + 1),
+		touchTargets: [...cards, ...collectionCards].every(node => node.getBoundingClientRect().height >= 44),
+		noHorizontalOverflow: document.documentElement.scrollWidth <= innerWidth && dialog.scrollWidth <= dialog.clientWidth && owner.scrollWidth <= owner.clientWidth + 1,
+		oneScrollOwner: [...section.querySelectorAll("*")].every(node => !["auto", "scroll"].includes(getComputedStyle(node).overflowY) || node.scrollHeight <= node.clientHeight + 1),
+		footerReachable: footer.top >= 0 && footer.bottom <= innerHeight + 1,
+		compositeHeading: section.querySelector(".genre-composite-placement h4")?.textContent ?? null,
+	};
+}
+
 async function runGenreHierarchyScenario() {
 	const controller = createController();
 	const revisionBefore = controller.getState().revision;
@@ -1061,11 +1136,11 @@ async function runGenreHierarchyScenario() {
 			headingFocused: document.activeElement === dialog.querySelector("#genre-hierarchy-configure-title"),
 			bothDefault: dialog.querySelector('.genre-hierarchy-configuration-surface input[value="both"]')?.checked ?? false,
 			selectedCount: dialog.querySelector(".genre-hierarchy-configured-genres")?.textContent.includes("Configured Genres · 27") ?? false,
-			allConfiguredRowsVisible: dialog.querySelectorAll(".genre-hierarchy-configure-row").length === 27,
+			configuredRowsCollapsed: !dialog.querySelector(".genre-hierarchy-configured-genres").open && [...dialog.querySelectorAll(".genre-hierarchy-configure-row button")].every(button => !button.checkVisibility()),
 			duplicateDisclosuresAbsent: !dialog.querySelector(".genre-hierarchy-configure .removable-selection-disclosure, .genre-hierarchy-configure .genre-review-toggle"),
 			noDestinationChooser: !dialog.querySelector(".genre-destination-choices"),
 			noOverride: !dialog.querySelector('[data-action="add-all-genres-anyway"]'),
-			contextualSummary: dialog.querySelector(".genre-hierarchy-configuration-summary")?.textContent.includes("27 configured Genres · 35 sources") ?? false,
+			redundantSummaryAbsent: !dialog.querySelector(".genre-hierarchy-configuration-summary"),
 			mediaPills: dialog.querySelectorAll('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-media"]').length === 3,
 			sortPills: dialog.querySelectorAll('.genre-hierarchy-configuration-surface input[name="genre-hierarchy-sort"]').length === 4,
 			pillRounded: Number.parseFloat(getComputedStyle(mediaPill).borderRadius) >= 18,
@@ -1091,86 +1166,18 @@ async function runGenreHierarchyScenario() {
 		secondaryState.focusRestored = document.activeElement === helpTrigger;
 
 		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
-		const structureCards = [...dialog.querySelectorAll(".genre-structure-choice-grid [data-choice-id]")];
-		const structureCounts = Object.fromEntries(structureCards.map((label) => [label.dataset.choiceId, label.querySelector(".genre-structure-counts")?.textContent ?? ""]));
-		const structureGrid = dialog.querySelector(".genre-structure-choice-grid");
-		const structureSection = dialog.querySelector(".genre-hierarchy-structure");
-		const structureFieldset = structureGrid.closest("fieldset");
-		const selectedStructureCard = dialog.querySelector('[data-choice-id="genre-folders"]');
-		const unselectedStructureCard = dialog.querySelector('[data-choice-id="media-folders"]');
-		const selectedStructureStyle = getComputedStyle(selectedStructureCard);
-		const unselectedStructureStyle = getComputedStyle(unselectedStructureCard);
-		const structurePreviews = structureCards.map((card) => card.querySelector(".genre-structure-wireframe"));
-		const descriptionDiagramGaps = structureCards.map((card) => {
-			const descriptionRect = card.querySelector("small").getBoundingClientRect();
-			const diagramRect = card.querySelector(".genre-structure-wireframe").getBoundingClientRect();
-			return diagramRect.top - descriptionRect.bottom;
-		});
-		const structureRows = [];
-		for (const card of structureCards) {
-			const top = Math.round(card.getBoundingClientRect().top);
-			const row = structureRows.find((entry) => entry.top === top);
-			if (row) row.cards.push(card);
-			else structureRows.push({ top, cards: [card] });
-		}
-		const structureVisualEvidence = {
-			previewTypes: structureCards.map((card) => card.querySelector("[data-genre-structure-preview]")?.dataset.genreStructurePreview ?? null),
-			visualHierarchyComplete: structurePreviews.every((preview) => preview
-				&& preview.querySelector(".genre-structure-wireframe-collection-title")
-				&& preview.querySelector(".genre-structure-wireframe-folder-title")
-				&& preview.querySelector(".genre-structure-wireframe-sources i")),
-			visualPreviewsBounded: structureCards.every((card) => {
-				const cardRect = card.getBoundingClientRect();
-				const previewRect = card.querySelector(".genre-structure-wireframe").getBoundingClientRect();
-				return previewRect.width > 0 && previewRect.height > 0 && previewRect.left >= cardRect.left - 1 && previewRect.right <= cardRect.right + 1;
-			}),
-			countsReadable: structureCards.every((card) => {
-				const counts = card.querySelector(".genre-structure-counts");
-				return counts.getBoundingClientRect().height > 0 && counts.scrollWidth <= counts.clientWidth + 1;
-			}),
-			descriptionDiagramSpacingConsistent: Math.max(...descriptionDiagramGaps) - Math.min(...descriptionDiagramGaps) <= 1,
-			rowCountAlignmentPreserved: structureRows.every((row) => {
-				const countBottoms = row.cards.map((card) => card.querySelector(".genre-structure-counts").getBoundingClientRect().bottom);
-				return Math.max(...countBottoms) - Math.min(...countBottoms) <= 1;
-			}),
-			selectedStyleClear: selectedStructureCard.dataset.selected === "true"
-				&& !unselectedStructureCard.hasAttribute("data-selected")
-				&& selectedStructureStyle.borderColor !== unselectedStructureStyle.borderColor
-				&& selectedStructureStyle.backgroundColor !== unselectedStructureStyle.backgroundColor,
-			nativeRadioSemantics: structureCards.every((card) => card.querySelector('input[type="radio"]'))
-				&& dialog.querySelectorAll('.genre-structure-choice-grid input[type="radio"]:checked').length === 1,
-			previewsHiddenFromAccessibilityTree: structurePreviews.every((preview) => preview.getAttribute("aria-hidden") === "true"),
-		};
-		const actionComposite = [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure");
-		const addToBoth = actionComposite?.querySelector('input[value="both"]');
+		const structureState = genreStructureEvidence(dialog);
 		const compositeSection = dialog.querySelector(".genre-composite-placement");
-		const compositeRect = compositeSection?.getBoundingClientRect();
-		const structureGridRect = structureGrid.getBoundingClientRect();
-		const structureState = {
-			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
-			headingFocused: document.activeElement === dialog.querySelector("#genre-hierarchy-structure-title"),
-			introCopy: structureSection.querySelector(":scope > .studio-configure-helper")?.textContent ?? "",
-			genreHierarchyHeadingAbsent: !structureSection.textContent.includes("Genre hierarchy"),
-			structureLegendHidden: structureFieldset.querySelector("legend")?.classList.contains("visually-hidden") === true,
-			choiceCount: dialog.querySelectorAll('[name="genre-hierarchy-structure"]').length,
-			defaultGenreFolders: dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]')?.checked ?? false,
-			structureCounts,
-			visibleCountsOmitSources: Object.values(structureCounts).every((value) => !value.includes("source")),
-			structureCopy: Object.fromEntries(structureCards.map((card) => [card.dataset.choiceId, {
-				title: card.querySelector("strong")?.textContent ?? "",
-				description: card.querySelector("small")?.textContent ?? "",
-			}])),
-			structureVisualEvidence,
-			compositesBelowCards: Boolean(compositeRect) && compositeRect.top >= structureGridRect.bottom - 1,
-			compositeHeading: compositeSection?.querySelector("h4")?.textContent ?? "",
-			compositeHelper: compositeSection?.querySelector("h4 + p")?.textContent ?? "",
-			optionalPlacementAbsent: !compositeSection?.textContent.includes("Optional placement"),
-			compositeControlCount: dialog.querySelectorAll(".genre-composite-control").length,
-			actionTargets: [...(actionComposite?.querySelectorAll('input[type="radio"]') ?? [])].map((input) => input.value),
-			actionLabels: [...(actionComposite?.querySelectorAll("label") ?? [])].map((label) => label.textContent.trim()),
-		};
+		structureState.compositeInitiallyCollapsed = !compositeSection.querySelector("details").open;
+		await clickAndSettle(compositeSection.querySelector("summary"));
+		const actionComposite = [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure");
+		const addToBoth = actionComposite.querySelector('input[value="both"]');
+		structureState.actionTargets = [...actionComposite.querySelectorAll('input[type="radio"]')].map((input) => input.value);
+		structureState.actionLabels = [...actionComposite.querySelectorAll("label")].map((label) => label.textContent.trim());
 		await clickAndSettle(addToBoth);
-		structureState.addToBothCount = dialog.querySelector('[data-choice-id="genre-folders"] .genre-structure-counts')?.textContent ?? "";
+		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
+		structureState.addToBothTotals = [...dialog.querySelectorAll(".decades-plan-totals strong")].map(node => Number(node.textContent));
+		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-structure"]'));
 		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="media-folders"]'));
 		structureState.mediaFoldersSelected = dialog.querySelector('[data-choice-id="media-folders"]')?.dataset.selected === "true"
 			&& dialog.querySelector('[name="genre-hierarchy-structure"][value="media-folders"]')?.checked === true;
@@ -1179,6 +1186,7 @@ async function runGenreHierarchyScenario() {
 		structureState.genreFoldersReselected = dialog.querySelector('[data-choice-id="genre-folders"]')?.dataset.selected === "true";
 		structureState.addToBothPreserved = actionComposite !== null && [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure")?.querySelector('input[value="both"]')?.checked === true;
 		const restoredActionComposite = [...dialog.querySelectorAll(".genre-composite-control")].find((control) => control.querySelector("legend")?.textContent === "Action & Adventure");
+		await clickAndSettle(dialog.querySelector(".genre-composite-details summary"));
 		await clickAndSettle(restoredActionComposite.querySelector('input[value="standalone"]'));
 		await clickAndSettle(dialog.querySelector('[name="genre-hierarchy-structure"][value="separate-media-genre-folders"]'));
 		await clickAndSettle(dialog.querySelector(".add-source-actions .editor-apply"));
@@ -1207,7 +1215,7 @@ async function runGenreHierarchyScenario() {
 		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-structure"]'));
 		const structureRestored = dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage === "structure" && dialog.querySelector('[name="genre-hierarchy-structure"][value="genre-folders"]')?.checked === true;
 		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-configuration"]'));
-		const configureRestored = dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage === "configure" && dialog.querySelector(".genre-hierarchy-configuration-summary")?.textContent.includes("27 configured Genres · 35 sources");
+		const configureRestored = dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage === "configure" && dialog.querySelector(".genre-hierarchy-configured-genres > summary")?.textContent.includes("Configured Genres · 27");
 		await clickAndSettle(dialog.querySelector('[data-action="back-to-genre-hierarchy-selection"]'));
 		const selectRestored = {
 			stage: dialog.querySelector(".genre-hierarchy-form")?.dataset.genreHierarchyStage ?? null,
@@ -1258,6 +1266,249 @@ async function runGenreHierarchyScenario() {
 		host.remove();
 	}
 }
+
+async function runGenreStructureScenario({ enlargedText = false, forcedColors = false, stateCases = false } = {}) {
+	const check = (value, message) => { if (!value) throw new Error("Genre Structure " + innerWidth + ": " + message); return value; };
+	const font = document.documentElement.style.fontSize;
+	if (enlargedText) document.documentElement.style.fontSize = (parseFloat(getComputedStyle(document.documentElement).fontSize) * 2) + "px";
+	const evidence = { width: innerWidth, height: innerHeight, enlargedText, forcedColors, layouts: [], states: [], noMutation: true, mappedIds: [] };
+	let root, host, dialog, controller, before, revision, referencePresentation;
+	const query = (selector) => check(dialog.querySelector(selector), selector);
+	const choose = (id) => clickAndSettle(query('input[value="' + id + '"]'));
+	const next = () => clickAndSettle(query(".add-source-actions .editor-apply"));
+	const back = () => clickAndSettle(query(".add-source-header-action"));
+	const key = async key => {
+		await new Promise(resolve => { window.__finish230Key = resolve; window.pressGuidedPresentationKey(JSON.stringify({ key })); });
+		await afterCommittedEffects();
+	};
+	async function shot(name) {
+		if (!globalThis.capture204Preview || ![360, 393, 900, 1280].includes(innerWidth)) return;
+		const owner = query(".add-source-scroll");
+		owner.scrollTop = 0;
+		const target = name === "separate-home" ? query(".genre-example-home-groups") : name === "collection-layout-reference" ? query(".editor-layout-choice-grid") : name === "folder-choices" ? query('[data-choice-id="genre-folders"]') : name.startsWith("composite-") ? query(".genre-composite-placement") : ["media-folders", "separate-media-genre-folders"].includes(name) ? query('[data-choice-id="' + name + '"]') : null;
+		if (target) owner.scrollTop += target.getBoundingClientRect().top - owner.getBoundingClientRect().top - 12;
+		await afterCommittedEffects();
+		await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: "genre-structure-" + innerWidth + "-" + innerHeight + (enlargedText ? "-text200" : "") + (forcedColors ? "-forced-colors" : "") + "-" + name })); });
+	}
+	function presentation(card) {
+		const css = getComputedStyle(card), title = getComputedStyle(card.querySelector("strong")), description = getComputedStyle(card.querySelector("small"));
+		return {
+			fontFamily: css.fontFamily, padding: css.padding, radius: css.borderRadius,
+			background: css.backgroundColor, border: css.borderColor, inset: css.boxShadow,
+			title: { size: title.fontSize, weight: title.fontWeight, color: title.color },
+			description: { size: description.fontSize, weight: description.fontWeight, color: description.color, lineHeight: description.lineHeight },
+		};
+	}
+	function layout(name) {
+		const value = genreStructureEvidence(dialog);
+		for (const card of dialog.querySelectorAll(".genre-hierarchy-structure .decades-choice-grid > label")) {
+			const expected = referencePresentation[card.dataset.selected === "true" ? "selected" : "unselected"];
+			check(JSON.stringify(presentation(card)) === JSON.stringify(expected), name + " Collection layout style parity: " + JSON.stringify({ actual: presentation(card), expected }));
+		}
+		for (const flag of ["readable", "touchTargets", "noHorizontalOverflow", "oneScrollOwner", "footerReachable", "examplesLabelled", "nativeGroups", "illustrativeOutput", "diagramPosition", "originalPills", "compositeInformation", "resultAbsent"]) check(value[flag], name + " " + flag);
+		check(Object.values(value.structureCounts).every(count => count === null), name + " distracting folder counts");
+		if (!dialog.querySelector(".genre-advanced-errors") && value.collectionIds.length) check(JSON.stringify(value.collectionCounts) === JSON.stringify({ together: "1 collection", "separate-media-collections": "2 collections" }), name + " Collection counts");
+		evidence.layouts.push({ name, ...value });
+	}
+	function unchanged() {
+		check(controller.getState().revision === revision && serializedValue(controller) === before, "Structure changed the project");
+	}
+	async function dispose() {
+		if (!root) return;
+		unchanged();
+		await act(async () => root.unmount()); host.remove(); root = null;
+	}
+	async function mount({ genres = ["Action", "Adventure", "Action & Adventure", "Comedy"], scope = "new-collection", title = "Destination", existingAction = false } = {}) {
+		await dispose();
+		controller = createController();
+		if (scope === "new-folder") {
+			check(controller.importValue([{ id: "genre-destination", title, folders: [] }]).ok, "destination import");
+			if (existingAction) {
+				const parent = controller.getState().project.collections[0];
+				const plan = createGenreHierarchyPlan(controller.getState().project, { scope: "new-folder", destinationCollectionInternalId: parent.internalId, projectRevision: controller.getState().revision, genres: ["Action"] });
+				check(applyGenreHierarchyPlan(controller, plan.plan).ok, "existing Action setup");
+			}
+		}
+		const destination = controller.getState().project.collections[0];
+		before = serializedValue(controller); revision = controller.getState().revision;
+		host = document.createElement("div"); document.body.append(host); root = createRoot(host);
+		await act(async () => {
+			root.render(createElement(CreationDialog, {
+				scope, project: controller.getState().project, projectRevision: revision, currentYear: 2026,
+				destinationCollectionInternalId: destination?.internalId, destinationCollectionTitle: destination?.editable.title,
+				initialOptionId: "genres", onCancel() {}, onCreateBlank() {},
+				// Observe the production plan handed to Create; controller application already has pure and mounted coverage.
+				onApplyGenres(plan) { unchanged(); evidence.mappedIds.push(plan.configuration.structure); return { ok: false, errors: [{ message: "Read-only plan capture." }] }; },
+			}));
+			await afterCommittedEffects();
+		});
+		dialog = document.querySelector('[data-creation-option="genres"]');
+		for (const name of genres) await clickAndSettle(genreCardByName(dialog, name));
+		await next();
+		if (!evidence.configureDisclosure) {
+			const details = query(".genre-hierarchy-configured-genres"), summary = details.querySelector("summary");
+			const actions = [...details.querySelectorAll("button")];
+			check(!details.open && actions.every(button => !button.checkVisibility()), "configured rows start collapsed");
+			check(!dialog.querySelector(".genre-hierarchy-configuration-summary"), "redundant Configure summary");
+			const owner = query(".add-source-scroll"), footer = query(".add-source-actions");
+			const outerTop = dialog.getBoundingClientRect().top, footerTop = footer.getBoundingClientRect().top, pageTop = scrollY;
+			async function configureShot(state) {
+				if (!globalThis.capture204Preview || forcedColors || ![393, 1280].includes(innerWidth)) return;
+				owner.scrollTop = 0;
+				if (state === "expanded") owner.scrollTop += details.getBoundingClientRect().top - owner.getBoundingClientRect().top - 12;
+				await afterCommittedEffects();
+				await new Promise(resolve => { window.__finish204Capture = resolve; window.capture204Preview(JSON.stringify({ name: "genre-configure-" + innerWidth + "-" + innerHeight + (enlargedText ? "-text200" : "") + "-" + state })); });
+			}
+			await configureShot("collapsed");
+			summary.focus(); await key("Enter");
+			check(details.open && actions.every(button => button.checkVisibility()), "configured Preview and Remove revealed");
+			check(document.activeElement === summary, "disclosure retains focus");
+			await key("Tab"); check(document.activeElement === actions[0], "expanded Preview in keyboard order");
+			await configureShot("expanded");
+			summary.focus(); await key(" ");
+			check(!details.open, "Space collapses configured rows");
+			await key("Tab"); check(document.activeElement === footer.querySelector(".editor-apply"), "collapsed Preview actions skipped");
+			check(Math.abs(dialog.getBoundingClientRect().top - outerTop) < 1 && Math.abs(footer.getBoundingClientRect().top - footerTop) < 1 && scrollY === pageTop, "Configure disclosure moved outer surface");
+			check(owner.scrollWidth <= owner.clientWidth + 1 && footer.getBoundingClientRect().bottom <= innerHeight + 1, "Configure overflow or footer");
+			unchanged(); evidence.configureDisclosure = true;
+		}
+		await next();
+	}
+	try {
+		await mount();
+		await next();
+		referencePresentation = {
+			selected: presentation(query(".editor-layout-choice.is-selected")),
+			unselected: presentation(query(".editor-layout-choice:not(.is-selected)")),
+		};
+		evidence.styleReference = referencePresentation;
+		await shot("collection-layout-reference");
+		await back();
+		layout("default"); await shot("default"); await shot("folder-choices"); await shot("composite-default");
+		check(!query(".genre-composite-details").open, "default composite detail must be collapsed");
+		check(query(".genre-composite-current-summary").textContent === "Each keeps its own folder.", "default effective placement");
+		const together = query('input[value="together"]');
+		together.focus(); await key("ArrowRight");
+		check(query('input[value="separate-media-collections"]').checked && document.activeElement === query('input[value="separate-media-collections"]'), "native Collection arrow focus");
+		check(!dialog.querySelector('input[name="genre-hierarchy-structure"]'), "hidden folder controls remain mounted");
+		layout("separate"); await shot("separate"); await shot("separate-home");
+		await key("ArrowLeft");
+		check(together.checked && document.activeElement === together, "reveal stole Collection focus");
+		await key("Tab");
+		check(document.activeElement === query('input[value="genre-folders"]'), "Tab should reach selected folder radio");
+		await key("ArrowRight");
+		check(query('input[value="media-folders"]').checked && document.activeElement === query('input[value="media-folders"]'), "native Folder arrow");
+		check(getComputedStyle(document.activeElement.closest("label")).outlineStyle !== "none", "card keyboard focus");
+		await assertSelectionAppearance(document.activeElement.closest("label"), "single", { wait: waitForMountedCondition, forcedColors });
+		layout("media-folders"); await shot("media-folders");
+		await key("ArrowRight"); check(query('input[value="separate-media-genre-folders"]').checked, "native third Folder choice"); layout("separate-media-genre-folders"); await shot("separate-media-genre-folders");
+		await choose("genre-folders");
+		const scroller = query(".add-source-scroll"), footer = query(".add-source-actions");
+		const rect = dialog.getBoundingClientRect(), footerTop = footer.getBoundingClientRect().top, pageTop = scrollY;
+		const target = query('input[value="separate-media-genre-folders"]');
+		const card = target.closest("label");
+		scroller.scrollTop += card.getBoundingClientRect().top - (scroller.getBoundingClientRect().bottom - 30);
+		await afterCommittedEffects();
+		check(card.getBoundingClientRect().bottom > scroller.getBoundingClientRect().bottom, "partial-card setup");
+		target.focus(); await key(" ");
+		check(target.checked && document.activeElement === target, "partially clipped native radio focus");
+		check(Math.abs(dialog.getBoundingClientRect().top - rect.top) < 1 && Math.abs(footer.getBoundingClientRect().top - footerTop) < 1 && scrollY === pageTop, "partial focus moved outer surface");
+		await choose("genre-folders");
+		const disclosure = query(".genre-composite-details"), summary = disclosure.querySelector("summary");
+		summary.focus(); await key("Enter");
+		check(disclosure.open && document.activeElement === summary, "native disclosure expansion");
+		await choose("both");
+		const pill = query('.genre-composite-control input[value="both"]');
+		pill.focus(); await key(" ");
+		check(document.activeElement === pill && getComputedStyle(pill.closest("label")).outlineStyle !== "none", "original pill keyboard focus");
+		await assertSelectionAppearance(pill.closest("label"), "single", { wait: waitForMountedCondition, forcedColors });
+		check(query(".genre-composite-summary").textContent.includes("Action and Adventure"), "custom placement summary");
+		layout("custom-open"); await shot("composite-custom");
+		summary.focus(); await key("Enter");
+		check(!disclosure.open && query(".genre-composite-summary").getBoundingClientRect().height > 0, "custom summary hidden with controls");
+		await key("Tab");
+		check(document.activeElement === query(".add-source-actions .editor-apply"), "collapsed controls remain in the tab order");
+		layout("custom-collapsed");
+		check(Math.abs(dialog.getBoundingClientRect().top - rect.top) < 1 && Math.abs(footer.getBoundingClientRect().top - footerTop) < 1 && scrollY === pageTop, "disclosure moved outer surface");
+		evidence.keyboard = true; evidence.partialFocus = true; evidence.disclosure = true;
+		if (stateCases) {
+			for (const id of ["genre-folders", "media-folders", "separate-media-genre-folders"]) {
+				await choose(id);
+				await choose("separate-media-collections"); await choose("together");
+				check(query('input[value="' + id + '"]').checked, "remember " + id);
+				await next(); await next(); await back();
+			}
+			await choose("separate-media-collections"); await next(); await next(); await back();
+			check(evidence.mappedIds.join() === "genre-folders,media-folders,separate-media-genre-folders,separate-media-collections", "wrong planner IDs reached Create");
+			await choose("together"); await choose("genre-folders");
+			check(query('input[name="genre-composite-Action & Adventure"][value="both"]').checked, "composite lost across grouping");
+			await next();
+			await act(async () => { setInputValue(query("#genre-hierarchy-collection-name"), "My Genres"); await afterCommittedEffects(); });
+			await choose("POSTER"); await choose("HIDE_EVERYWHERE"); await clickAndSettle(query('input[data-editor-control="genreHierarchyPinToTop"]'));
+			await back(); await choose("separate-media-collections"); await choose("together"); await next();
+			check(query("#genre-hierarchy-collection-name").value === "My Genres" && query('input[value="POSTER"]').checked && query('input[value="HIDE_EVERYWHERE"]').checked && query('input[data-editor-control="genreHierarchyPinToTop"]').checked, "Appearance values lost");
+			await act(async () => { setInputValue(query("#genre-hierarchy-collection-name"), ""); await afterCommittedEffects(); });
+			await back();
+			check(!dialog.querySelector(".genre-structure-counts") || !query('[data-choice-id="genre-folders"]').querySelector(".genre-structure-counts"), "invalid plan fabricated counts");
+			check(!dialog.querySelector(".genre-structure-result") && dialog.querySelector(".genre-advanced-errors"), "invalid plan guidance");
+			await next();
+			check(query("#genre-hierarchy-collection-name"), "name recovery blocked");
+			await act(async () => { setInputValue(query("#genre-hierarchy-collection-name"), "My Genres"); await afterCommittedEffects(); });
+			await back(); await back();
+			await clickAndSettle(query('[aria-label="Remove Adventure"]')); await next();
+			check(query(".genre-fixed-media-note").textContent.includes("previous placement is unavailable") && !query(".genre-composite-details").open, "fallback explanation hidden");
+			check(query('input[name="genre-composite-Action & Adventure"][value="standalone"]').checked, "effective composite fallback");
+			check(query(".genre-composite-current-summary").textContent === "Each keeps its own folder." && query(".genre-composite-helper").checkVisibility(), "fallback Current placement");
+			await back(); await back(); await clickAndSettle(genreCardByName(dialog, "Adventure")); await next(); await next();
+			check(query('input[name="genre-composite-Action & Adventure"][value="both"]').checked, "stored composite did not restore");
+			evidence.states.push("remembered-arrangements", "appearance", "invalid-counts-and-name-recovery", "composite-fallback-and-restoration");
+			await mount({ genres: ["Comedy"] });
+			await choose("separate-media-collections"); await back(); await choose("movies"); await next();
+			check(!dialog.querySelector(".genre-collection-choice-grid") && query('input[value="genre-folders"]').checked, "single-media invalidation");
+			check(query('[data-choice-id="genre-folders"] small').textContent === "Open a genre folder to browse its Movies.", "Movie-only copy");
+			layout("movies-only"); await shot("movies-only");
+			await back(); await choose("both"); await next();
+			check(query('input[value="genre-folders"]').checked && query('input[value="together"]').checked, "Separate reactivated automatically");
+			await back(); await choose("series"); await next();
+			check(!dialog.querySelector(".genre-collection-choice-grid") && query('[data-choice-id="media-folders"] small').textContent === "Open Series, then choose a genre.", "Series-only copy");
+			layout("series-only");
+			await mount({ genres: ["Action", "Kids"] });
+			check(query(".genre-collection-choice-grid"), "fixed-media drafts must permit split");
+			await mount({ genres: ["Comedy", "Action & Adventure"] });
+			await back(); await choose("movies"); await next();
+			check(query(".genre-collection-choice-grid"), "Media Movies must retain fixed Series");
+			evidence.states.push("media-invalidation", "single-media-copy", "fixed-media-authority");
+			await mount({ scope: "new-folder", existingAction: true });
+			check(!dialog.querySelector(".genre-collection-choice-grid"), "New Folder Collection question");
+			check(query(".genre-structure-destination").textContent === "New folders will be added to “Destination”.", "captured destination");
+			check(query(".genre-fixed-media-note").textContent.includes("Action already has matching") && !query(".genre-composite-details").open, "blocked target hidden");
+			layout("new-folder"); await shot("new-folder");
+			// Removing the remaining addable Genres retains the existing zero-addition guard.
+			await back(); await clickAndSettle(query('[aria-label="Remove Adventure"]')); await clickAndSettle(query('[aria-label="Remove Action & Adventure"]')); await clickAndSettle(query('[aria-label="Remove Comedy"]'));
+			check(query(".add-source-actions .editor-apply").disabled, "zero-addition creation guard");
+			await mount({ scope: "new-folder", title: "\u200E", genres: ["Comedy"] });
+			check(query(".genre-structure-destination").textContent.includes("Collection with hidden Nuvio title"), "hidden title fallback");
+			await mount({ scope: "new-folder", title: 42, genres: ["Comedy"] });
+			check(query(".genre-structure-destination").textContent.includes("Untitled collection"), "unusual title fallback");
+			evidence.states.push("new-folder", "blocked-composite", "zero-additions", "safe-destination-titles");
+		}
+		await mount({ genres: ["Action", "Adventure", "Action & Adventure", "Science Fiction", "Fantasy", "Sci-Fi & Fantasy", "War", "War & Politics"] });
+		check(query(".genre-composite-current-summary").textContent === "Each keeps its own folder.", "all-composite default placement");
+		await shot("composite-all-default");
+		await clickAndSettle(query(".genre-composite-details summary"));
+		await clickAndSettle(query('input[name="genre-composite-Action & Adventure"][value="both"]'));
+		check([...query(".genre-composite-summary").children].map(node => node.textContent).join("|") === "Action & Adventure: added to Action and Adventure.|Sci-Fi & Fantasy: keeps its own folder.|War & Politics: keeps its own folder.", "custom Current placement includes standalone concepts");
+		layout("all-composites-custom"); await shot("composite-all-custom");
+		await clickAndSettle(query(".genre-composite-details summary"));
+		check(query(".genre-composite-current-summary").checkVisibility() && query(".genre-composite-helper").checkVisibility(), "all-composite collapsed information");
+		unchanged();
+		return evidence;
+	} finally {
+		await dispose();
+		document.documentElement.style.fontSize = font;
+	}
+}
+
 
 async function runGenreNewFolderSummaryScenario() {
 	const controller = createController();
@@ -3033,6 +3284,7 @@ async function runGenreLivePreviewScenario() {
 		const dialog = required(document.querySelector('[data-creation-option="genres"]'), "creation dialog");
 		await clickAndSettle(required(dialog.querySelector('[data-genre-name="Animation"]'), "Animation choice"));
 		await clickAndSettle(required(buttonContaining(dialog, "Continue to Configure"), "Configure action"));
+		await clickAndSettle(required(dialog.querySelector(".genre-hierarchy-configured-genres > summary"), "Configured Genres disclosure"));
 		const row = required(dialog.querySelector('.genre-hierarchy-configure-row[data-genre-name="Animation"]'), "Animation Configure row");
 		let previewTrigger = required(row.querySelector('button[aria-haspopup="dialog"]'), "Animation Preview trigger");
 		const requestsBeforeExplicitPreview = requests.length;
@@ -8895,9 +9147,18 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   evidence.noImplicitRequests = true; evidence.boundedScroll = true; evidence.focusRestored = true;
   if (layoutOnly) return evidence;
   if (guided && family === "decade") check(!dialog.querySelector('.decades-preview-catalogue summary'), "Decades Preview must be directly visible");
-  const trigger = editing ? dialog.querySelector('[data-action="preview-source-edit"]') : [...dialog.querySelectorAll('button')].find((element) => element.textContent.trim() === "Preview titles");
+  const configuredGenres = guided && family === "genre" ? check(dialog.querySelector('.genre-hierarchy-configured-genres'), "Configured Genres disclosure missing") : null;
+  if (configuredGenres) {
+   check(!configuredGenres.open, "Configured Genres should start collapsed");
+   await click(check(configuredGenres.querySelector(':scope > summary'), "Configured Genres summary missing"));
+   check(configuredGenres.open, "Configured Genres did not expand");
+  }
+  const trigger = editing ? dialog.querySelector('[data-action="preview-source-edit"]') : [...(configuredGenres ?? dialog).querySelectorAll('button')].find((element) => element.textContent.trim() === "Preview titles");
   check(trigger && !trigger.disabled, "current draft Preview unavailable: " + dialog.textContent.slice(-1600));
-  trigger.focus({ preventScroll: true }); await click(trigger);
+  if (configuredGenres) check(trigger.checkVisibility() && trigger.tabIndex >= 0, "configured Genre Preview is not visible and focusable");
+  trigger.focus({ preventScroll: true });
+  if (configuredGenres) check(document.activeElement === trigger, "configured Genre Preview did not receive focus");
+  await click(trigger);
   const modal = check(document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal'), "Preview modal missing");
   await wait(() => { const error = modal.querySelector('[role="alert"]'); if (error) throw new Error("Production Preview failed: " + error.textContent); return requests.length && !modal.querySelector('.studio-preview-state'); }, { label: "live combined-filter Preview", timeoutMs: 30000 });
   const first = requests.at(-1); check(first.status === 200, "production response status");
@@ -8910,7 +9171,11 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   check(images.length || modal.querySelector('[data-preview-empty-state]'), "missing real posters or exact empty state");
   evidence.previews.push({ url: first.url, status: first.status, totalResults: first.body.total_results, imageCount: images.length });
   await shot("preview"); await click(button(modal, "Close"));
-  check(document.activeElement === trigger && serializedValue(controller) === before, "Preview changed data or lost focus");
+  if (configuredGenres) {
+   check(document.activeElement === trigger, "Genre Preview did not restore trigger focus");
+   check(serializedValue(controller) === before, "Genre Preview changed Project data");
+   check(controller.getState().revision === initial.revision, "Genre Preview changed Project revision");
+  } else check(document.activeElement === trigger && serializedValue(controller) === before, "Preview changed data or lost focus");
   const count = requests.length; await click(trigger);
   const cached = document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal');
   await wait(() => !cached.querySelector('.studio-preview-state'), { label: "cached Preview" }); check(requests.length === count, "complete query cache missed"); await click(button(cached, "Close"));
@@ -8995,6 +9260,7 @@ window.__builderSourceEditMounted = { status: "running" };
 window.__runPreviewPagesScenario = (view) => runPreviewPagesScenario({ createController, importSources, openEdit, withMountedEditor, clickAndSettle, afterCommittedEffects, setInputValue, serializedValue, titlePreviewGeometry, waitForMountedCondition }, view);
 window.__runGenreToolbarScenario = runGenreToolbarScenario;
 window.__runGenreHierarchyScenario = runGenreHierarchyScenario;
+window.__runGenreStructureScenario = runGenreStructureScenario;
 window.__runGenreNewFolderSummaryScenario = runGenreNewFolderSummaryScenario;
 window.__runStreamingHierarchyScenario = runStreamingHierarchyScenario;
 window.__runStreamingAffinityDestinationScenario = runStreamingAffinityDestinationScenario;

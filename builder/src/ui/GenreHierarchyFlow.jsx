@@ -1,6 +1,7 @@
 import { collectionViewModeLabel } from "../nuvio/collection-presentation.js";
 import { HierarchyOutputSummary } from "./HierarchyOutputSummary.jsx";
 import { creationContext } from "./creation-context.js";
+import { nodeTitle } from "./node-titles.js";
 import { RequiredNameInput, requiredNameMessage, onlyRequiredNameErrors, handleRequiredNameSubmit } from "./RequiredNameInput.jsx";
 import { CreationStageIntro } from "./CreationStageIntro.jsx";
 import { DiscoverFamilyAdvancedSummary } from "./DiscoverFamilyAdvancedOptions.jsx";
@@ -23,7 +24,6 @@ import {
 	GENRE_MEDIA_CHOICES,
 	GENRE_SORT_OPTIONS,
 	GENRE_SOURCE_TITLE_MODES,
-	genreAdvancedOptionIsEmpty,
 	genreCompositePlacementChoices,
 	inspectGenreFolderPlan,
 	officialGenreConcept,
@@ -45,7 +45,6 @@ import { RemovableSelectionSummary } from "./RemovableSelectionSummary.jsx";
 import { SemanticSortChoices } from "./SemanticSortChoices.jsx";
 import { SourcePreviewSelectors, SourcePreviewContent } from "./SourceTitlePreviewDialog.jsx";
 import { sourcePreviewVariantGroups, sourcePreviewVariantKey, sourcePreviewContext } from "../source-add/source-title-preview.js";
-import { sourceSortLabel } from "../source-add/source-sort-variants.js";
 import { SourceElsewhereNotice } from "./SourceElsewhereNotice.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -131,7 +130,6 @@ function GenreConfigureRow({ group, onPreview, onRemove }) {
 }
 
 function ConfigureStep({
-	scope,
 	genres,
 	sharedMediaChoice,
 	sortOptionIds,
@@ -147,10 +145,6 @@ function ConfigureStep({
 	onOpenSecondary,
 }) {
 	const hasShared = genres.some((concept) => concept.shared);
-	const creatable = scope === "new-folder" ? folderPlan.readyGroups : folderPlan.groups;
-	const sourceCount = creatable.reduce((count, group) => count + group.drafts.length, 0);
-	const omittedCount = folderPlan.groups.length - creatable.length;
-	const sortLabel = (sortOptionIds ?? []).map(sourceSortLabel).join(", ");
 	const mediaNotice = fixedMediaNotice(genres, sharedMediaChoice);
 	return (
 		<section className="genre-hierarchy-configure" aria-labelledby="genre-hierarchy-configure-title">
@@ -161,85 +155,124 @@ function ConfigureStep({
 				<div className="genre-hierarchy-configuration-control"><SemanticSortChoices options={GENRE_SORT_OPTIONS} selectedIds={sortOptionIds} helper="Choose one or more options. Movies and Series get separate sources." name="genre-hierarchy-sort" validationMessageId="genre-hierarchy-sort-error" legend="Sources to create" onChange={onSortChange} /></div>
 			</section>
 			<GenreAdvancedOptions idPrefix="genre-hierarchy-advanced" value={advanced} includedGenres={genres} sharedMediaChoice={sharedMediaChoice} onChange={onAdvancedChange} onOpenSecondary={onOpenSecondary} />
-			<div className="genre-hierarchy-configuration-summary"><strong>{creatable.length} configured Genre{creatable.length === 1 ? "" : "s"} · {sourceCount} source{sourceCount === 1 ? "" : "s"}</strong><span>Selected: {sortLabel} · Filters: {genreAdvancedOptionIsEmpty(advanced) ? "Not configured" : "Configured"}{omittedCount ? ` · ${omittedCount} destination match${omittedCount === 1 ? "" : "es"}` : ""}</span></div>
 			{built.errors.length ? <ul className="genre-advanced-errors" role="alert">{built.errors.map((error) => <li id={error.code === "INVALID_GENRE_SORT" ? "genre-hierarchy-sort-error" : undefined} key={`${error.code}-${error.path}-${error.message}`}>{error.message}</li>)}</ul> : null}
-			<section className="genre-hierarchy-configured-genres" aria-labelledby="genre-hierarchy-configured-title">
-				<div className="add-source-section-heading"><div><h4 id="genre-hierarchy-configured-title">Configured Genres · {genres.length}</h4></div></div>
-				{folderPlan.groups.length ? <div className="genre-hierarchy-configure-list">{folderPlan.groups.map((group) => <GenreConfigureRow key={group.concept.name} group={group} onPreview={onPreview} onRemove={onRemove} />)}</div> : <p className="studio-configure-empty">No valid Genres are currently configured.</p>}
-				{folderPlan.partialGroups.length ? <p className="genre-attention-note">{folderPlan.partialGroups.length} partially matching Genre folder{folderPlan.partialGroups.length === 1 ? " is" : "s are"} omitted so a configured physical set is never created incompletely.</p> : null}
-			</section>
+			<details className="genre-hierarchy-configured-genres">
+				<summary><span className="filters-disclosure-label"><strong>Configured Genres · {genres.length}</strong><small>Preview or remove selected Genres.</small></span></summary>
+				<div className="genre-advanced-content">
+					{folderPlan.groups.length ? <div className="genre-hierarchy-configure-list">{folderPlan.groups.map((group) => <GenreConfigureRow key={group.concept.name} group={group} onPreview={onPreview} onRemove={onRemove} />)}</div> : <p className="studio-configure-empty">No valid Genres are currently configured.</p>}
+				</div>
+			</details>
+			{folderPlan.partialGroups.length ? <p className="genre-attention-note">{folderPlan.partialGroups.length} partially matching Genre folder{folderPlan.partialGroups.length === 1 ? " is" : "s are"} omitted so a configured physical set is never created incompletely.</p> : null}
 		</section>
 	);
 }
 
-const GENRE_STRUCTURE_PREVIEWS = Object.freeze({
-	"genre-folders": Object.freeze([
-		Object.freeze({ label: "Genres", folders: Object.freeze([
-			Object.freeze({ label: "Action", sources: Object.freeze(["Movies"]) }),
-			Object.freeze({ label: "Animation", sources: Object.freeze(["Movies", "Series"]) }),
-		]) }),
-	]),
-	"media-folders": Object.freeze([
-		Object.freeze({ label: "Genres", folders: Object.freeze([
-			Object.freeze({ label: "Movies", sources: Object.freeze(["Action", "Comedy"]) }),
-			Object.freeze({ label: "Series", sources: Object.freeze(["Drama", "Mystery"]) }),
-		]) }),
-	]),
-	"separate-media-genre-folders": Object.freeze([
-		Object.freeze({ label: "Genres", folders: Object.freeze([
-			Object.freeze({ label: "Action Movies", sources: Object.freeze(["Movies"]) }),
-			Object.freeze({ label: "Comedy Movies", sources: Object.freeze(["Movies"]) }),
-			Object.freeze({ label: "Drama Series", sources: Object.freeze(["Series"]) }),
-		]) }),
-	]),
-	"separate-media-collections": Object.freeze([
-		Object.freeze({ label: "Movie Genres", folders: Object.freeze([
-			Object.freeze({ label: "Action", sources: Object.freeze(["Movies"]) }),
-			Object.freeze({ label: "Comedy", sources: Object.freeze(["Movies"]) }),
-		]) }),
-		Object.freeze({ label: "Series Genres", folders: Object.freeze([
-			Object.freeze({ label: "Drama", sources: Object.freeze(["Series"]) }),
-			Object.freeze({ label: "Mystery", sources: Object.freeze(["Series"]) }),
-		]) }),
-	]),
-});
+// These labelled examples explain choices; the existing plans alone own output and counts.
+function genreStructureChoices(effectiveMedia) {
+	const media = ["MOVIE", "TV"].filter((type) => effectiveMedia.has(type)).map(mediaLabel);
+	const single = media.length === 1 ? media[0] : null;
+	return [
+		{
+			id: "genre-folders", label: "By genre",
+			description: single ? `Open a genre folder to browse its ${single}.` : "Open a genre folder, then choose Movies or Series where available.",
+		},
+		{
+			id: "media-folders", label: "By media type",
+			description: single ? `Open ${single}, then choose a genre.` : "Open Movies or Series, then choose a genre.",
+		},
+		{
+			id: "separate-media-genre-folders", label: "By genre and media type",
+			description: single ? `Include ${single} in each genre folder's name, such as Comedy ${single}.` : "Give Movies and Series separate genre folders, such as Comedy Movies and Comedy Series.",
+		},
+	];
+}
 
-function StructureChoicePreview({ structure, planResult }) {
-	const counts = planResult?.ok ? planResult.plan.counts : { collectionCount: 0, folderCount: 0 };
-	const collections = GENRE_STRUCTURE_PREVIEWS[structure] ?? GENRE_STRUCTURE_PREVIEWS["genre-folders"];
-	return <span className="genre-structure-preview" data-genre-structure-preview={structure}>
-		<span className="genre-structure-wireframe" data-collection-count={collections.length} aria-hidden="true">
-			<span className="genre-structure-wireframe-collections">
-				{collections.map((collection) => <span className="genre-structure-wireframe-collection" key={`${structure}-${collection.label}`}>
-					<span className="genre-structure-wireframe-collection-title">{collection.label}</span>
-					<span className="genre-structure-wireframe-folders">
-						{collection.folders.map((folder) => <span className="genre-structure-wireframe-folder" key={`${collection.label}-${folder.label}`}>
-							<span className="genre-structure-wireframe-folder-title">{folder.label}</span>
-							<span className="genre-structure-wireframe-sources">{folder.sources.map((source) => <i key={`${folder.label}-${source}`}>{source}</i>)}</span>
-						</span>)}
-					</span>
-				</span>)}
-			</span>
-		</span>
-		<span className="genre-structure-counts">{counts.collectionCount ? `${counts.collectionCount} collection${counts.collectionCount === 1 ? "" : "s"} · ` : ""}{counts.folderCount} folder{counts.folderCount === 1 ? "" : "s"}</span>
+function GenreExampleRail({ title, cards, opened }) {
+	return <span className="genre-example-rail">
+		<span className="genre-example-title">{title}</span>
+		<span className="genre-example-cards">{cards.map((label) => <span className={label === opened ? "is-opened" : undefined} key={label}>{label}</span>)}</span>
 	</span>;
 }
 
-function StructureStep({ structurePlans, compositeChoices, options, headingRef, onStructureChange, onCompositeChange }) {
-	const choices = GENRE_HIERARCHY_STRUCTURES
+function StructureExample({ structure, effectiveMedia }) {
+	const media = ["MOVIE", "TV"].filter((type) => effectiveMedia.has(type)).map(mediaLabel);
+	const byGenre = structure === "genre-folders";
+	const byMedia = structure === "media-folders";
+	const cards = byGenre ? ["Animation", "Comedy"] : byMedia ? media : media.map((label) => `Animation ${label}`);
+	const opened = cards[0];
+	const tabs = byGenre ? (media.length > 1 ? media : []) : byMedia ? ["Animation", "Comedy"] : [];
+	return <span className="genre-structure-example" data-genre-example={structure} aria-hidden="true">
+		{structure === "separate-media-collections" ? <span className="genre-example-home-groups">
+			<span className="genre-example-home-context">Nuvio Home</span>
+			<GenreExampleRail title="Movie Genres" cards={["Action", "Adventure", "Comedy"]} />
+			<GenreExampleRail title="Series Genres" cards={["Action & Adventure", "Animation", "Comedy"]} />
+		</span> : <span className="genre-example-scene">
+			<GenreExampleRail title="Genres" cards={cards} opened={opened} />
+			<span className="genre-example-open-arrow">→</span>
+			<span className="source-layout-preview genre-example-page">
+				<span className="genre-example-title">{opened}</span>
+				{tabs.length ? <span className="source-layout-preview-tab-bar">{tabs.map((tab, index) => <span className={index === 0 ? "is-selected" : undefined} key={tab}>{tab}</span>)}</span> : null}
+				<span className="source-layout-preview-poster-grid"><span /><span /><span /><span /><span /><span /></span>
+			</span>
+		</span>}
+	</span>;
+}
+
+function StructureCollectionCount({ planResult }) {
+	const counts = planResult?.ok ? planResult.plan.counts : null;
+	return counts ? <span className="genre-structure-counts">{counts.collectionCount} collection{counts.collectionCount === 1 ? "" : "s"}</span> : null;
+}
+
+function CombinedSeriesPlacement({ compositeChoices, placements, storedPlacements, onChange }) {
+	const customized = compositeChoices.some((entry) => placements[entry.genreName] !== "standalone");
+	return <section className="genre-composite-placement" aria-labelledby="genre-composite-placement-title">
+		<h4 id="genre-composite-placement-title">Combined Series genres</h4>
+		<p className="genre-composite-helper">Some Series genres combine names that Movies lists separately. Keep each in its own folder, or add it to the selected Movie genre folders below.</p>
+		<div className="genre-composite-current">
+			<h5>Current placement</h5>
+			<div className="genre-composite-current-summary">
+				{customized ? <ul className="genre-composite-summary">{compositeChoices.map((entry) => <li key={entry.genreName}>{entry.genreName}: {placements[entry.genreName] === "standalone" ? "keeps its own folder" : `added to ${placements[entry.genreName] === "both" ? entry.availableTargets.join(" and ") : placements[entry.genreName]}`}.</li>)}</ul> : <p>Each keeps its own folder.</p>}
+			</div>
+		</div>
+		{compositeChoices.map((entry) => {
+			const stored = storedPlacements[entry.genreName] ?? "standalone";
+			const fellBack = stored !== placements[entry.genreName];
+			return entry.blockedMessage || fellBack ? <p className="genre-fixed-media-note" key={entry.genreName}>
+				{entry.genreName}: {entry.blockedMessage} {fellBack ? "Your previous placement is unavailable. Keeping its own folder." : "Keep its own folder remains available."}
+			</p> : null;
+		})}
+		<details className="genre-composite-details">
+			<summary><span className="genre-composite-closed-label">Change placement</span><span className="genre-composite-open-label">Hide placement choices</span></summary>
+			<div className="genre-composite-details-body">
+				{compositeChoices.map((composite) => <div className="genre-composite-control" key={composite.genreName}>
+					<SemanticSortChoices options={composite.choices} selectedId={placements[composite.genreName]} name={`genre-composite-${composite.genreName}`} legend={composite.genreName} onChange={(placement) => onChange(composite.genreName, placement)} />
+				</div>)}
+			</div>
+		</details>
+	</section>;
+}
+
+function StructureStep({ scope, destinationCollectionTitle, structurePlans, effectiveMedia, lastOneCollectionStructure, planResult, compositeChoices, effectiveCompositePlacements, options, headingRef, onStructureChange, onCollectionGroupingChange, onCompositeChange }) {
+	const separate = options.structure === "separate-media-collections";
+	const destinationName = nodeTitle(destinationCollectionTitle, "collection").accessibleName;
+	const choices = genreStructureChoices(effectiveMedia)
 		.filter((option) => structurePlans.has(option.id))
-		.map((option) => ({ ...option, preview: <StructureChoicePreview structure={option.id} planResult={structurePlans.get(option.id)} /> }));
+		.map((option) => ({ ...option, preview: <StructureExample structure={option.id} effectiveMedia={effectiveMedia} /> }));
+	const togetherPlan = structurePlans.get(separate ? lastOneCollectionStructure : options.structure);
+	const collectionChoices = [
+		{ id: "together", label: "Together in one collection", description: "Keep Movies and Series together in one Nuvio collection.", preview: <StructureCollectionCount planResult={togetherPlan} /> },
+		{ id: "separate-media-collections", label: "Separate collections", description: "Create one collection for Movie Genres and another for Series Genres.", preview: <StructureCollectionCount planResult={structurePlans.get("separate-media-collections")} /> },
+	];
 	return <section className="genre-hierarchy-structure" aria-labelledby="genre-hierarchy-structure-title">
 		<CreationStageIntro step={3} phase="Structure" title="Structure" headingId="genre-hierarchy-structure-title" headingRef={headingRef} tabIndex={-1} />
-		<p className="studio-configure-helper">Choose how Genre folders are arranged within collections on your Nuvio Home screen.</p>
-		<ChoiceCards legend="Structure options" hideLegend name="genre-hierarchy-structure" options={choices} selectedId={options.structure} onChange={onStructureChange} gridClassName="genre-structure-choice-grid" />
-		{options.structure === "genre-folders" && compositeChoices.length ? <section className="genre-composite-placement" aria-labelledby="genre-composite-placement-title">
-			<div><h4 id="genre-composite-placement-title">Where should combined Series genres go?</h4><p>TMDB groups some Series genres separately from Movies. Choose whether those Series sources get their own folders or are added to the matching Movie Genre folder(s).</p></div>
-			{compositeChoices.map((composite) => <div className="genre-composite-control" key={composite.genreName}>
-				<SemanticSortChoices options={composite.choices} selectedId={composite.choices.some((choice) => choice.id === options.compositePlacements[composite.genreName]) ? options.compositePlacements[composite.genreName] : "standalone"} name={`genre-composite-${composite.genreName}`} legend={composite.genreName} onChange={(placement) => onCompositeChange(composite.genreName, placement)} />
-				{composite.blockedMessage ? <p className="genre-fixed-media-note">{composite.blockedMessage} Keep its own folder remains available.</p> : null}
-			</div>)}
-		</section> : null}
+		<p className="studio-configure-helper">Choose how your Genres appear in Nuvio.</p>
+		{scope === "new-folder" ? <p className="genre-structure-destination">New folders will be added to “{destinationName}”.</p> : null}
+		{structurePlans.has("separate-media-collections") ? <ChoiceCards legend="Keep Movies and Series together?" name="genre-hierarchy-collection-grouping" options={collectionChoices} selectedId={separate ? "separate-media-collections" : "together"} onChange={onCollectionGroupingChange} gridClassName="genre-collection-choice-grid" /> : null}
+		{!separate ? <p className="genre-structure-example-note">Examples show Tabbed Grid. Choose your layout in Appearance.</p> : null}
+		{!separate ? <ChoiceCards legend="How should folders be organised?" name="genre-hierarchy-structure" options={choices} selectedId={options.structure} onChange={onStructureChange} gridClassName="genre-structure-choice-grid" /> : null}
+		{separate ? <StructureExample structure="separate-media-collections" effectiveMedia={effectiveMedia} /> : null}
+		{options.structure === "genre-folders" && compositeChoices.length ? <CombinedSeriesPlacement compositeChoices={compositeChoices} placements={effectiveCompositePlacements} storedPlacements={options.compositePlacements} onChange={onCompositeChange} /> : null}
+		{!planResult.ok ? <ul className="genre-advanced-errors">{(planResult.errors ?? []).map((error) => <li key={`${error.code}-${error.path}`}>{error.message}</li>)}</ul> : null}
 	</section>;
 }
 
@@ -316,6 +349,7 @@ export function GenreHierarchyFlow({
 		folderTitleVisibilityTouched: false,
 		folderTileShape: DEFAULT_GENRE_ARTWORK_SHAPE,
 	}));
+	const [lastOneCollectionStructure, setLastOneCollectionStructure] = useState(DEFAULT_GENRE_HIERARCHY_STRUCTURE);
 	const [secondarySurface, setSecondarySurface] = useState(null);
 	const [preview, setPreview] = useState(null);
 	const [knownPreviewCounts, setKnownPreviewCounts] = useState({});
@@ -347,8 +381,8 @@ export function GenreHierarchyFlow({
 		const current = options.compositePlacements[entry.genreName] ?? "standalone";
 		return [entry.genreName, entry.choices.some((choice) => choice.id === current) ? current : "standalone"];
 	}))), [compositeChoices, options.compositePlacements]);
+	const effectiveMedia = useMemo(() => new Set(built.ok ? built.drafts.map((draft) => draft.editable.mediaType) : []), [built]);
 	const structurePlans = useMemo(() => {
-		const effectiveMedia = new Set(built.ok ? built.drafts.map((draft) => draft.editable.mediaType) : []);
 		const plans = new Map();
 		for (const structureOption of GENRE_HIERARCHY_STRUCTURES) {
 			if (structureOption.id === "separate-media-collections" && (scope !== "new-collection" || effectiveMedia.size !== 2)) continue;
@@ -379,7 +413,7 @@ export function GenreHierarchyFlow({
 			}));
 		}
 		return plans;
-	}, [advanced, built, destinationCollectionInternalId, effectiveCompositePlacements, options, project, projectRevision, scope, selection, sharedMediaChoice, sortOptionIds]);
+	}, [advanced, destinationCollectionInternalId, effectiveCompositePlacements, effectiveMedia, options, project, projectRevision, scope, selection, sharedMediaChoice, sortOptionIds]);
 	const planResult = structurePlans.get(options.structure) ?? structurePlans.get(DEFAULT_GENRE_HIERARCHY_STRUCTURE) ?? Object.freeze({ ok: false, plan: null, errors: Object.freeze([]) });
 
 	useEffect(() => () => previewCoordinatorRef.current.cancel({ notify: false }), []);
@@ -407,6 +441,17 @@ export function GenreHierarchyFlow({
 	function updateOptions(patch) {
 		setOptions((current) => Object.freeze({ ...current, ...patch }));
 		setDiagnostic(null);
+	}
+
+	function chooseStructure(structure) {
+		if (!structurePlans.has(structure)) return;
+		if (structure !== "separate-media-collections") setLastOneCollectionStructure(structure);
+		updateOptions({ structure });
+	}
+
+	function chooseCollectionGrouping(grouping) {
+		chooseStructure(grouping === "separate-media-collections" ? grouping
+			: structurePlans.has(lastOneCollectionStructure) ? lastOneCollectionStructure : DEFAULT_GENRE_HIERARCHY_STRUCTURE);
 	}
 
 	function chooseGenre(genreName) {
@@ -510,10 +555,10 @@ export function GenreHierarchyFlow({
 				? (planResult.ok && planResult.plan.counts.folderCount > 0 || nameCorrection) ? "Continue to Appearance" : "No Genre folders ready"
 				: isApplying ? "Creating…" : guidedCreateActionLabel(scope, planResult?.plan?.counts);
 	return <>
-		<CreationHeader title="Create with Genres" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select official TMDB Genres in folder order." : step === "configure" ? "Choose your media, sources and any filters, then continue." : step === "structure" ? "Choose how Genre sources are grouped in Nuvio." : "Choose how your collections and folders will appear in Nuvio."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-genre-hierarchy-selection" : step === "structure" ? "back-to-genre-hierarchy-configuration" : "back-to-genre-hierarchy-structure"} backDisabled={isApplying} inactive={Boolean(secondarySurface || preview)} onClose={onCancel} />
+		<CreationHeader title="Create with Genres" context={creationContext(scope, destinationCollectionTitle)} description={step === "select" ? "Select official TMDB Genres in folder order." : step === "configure" ? "Choose your media, sources and any filters, then continue." : step === "structure" ? "Arrange your collections and folders." : "Choose how your collections and folders will appear in Nuvio."} onBack={goBack} backAction={step === "select" ? "back-to-creation-launcher" : step === "configure" ? "back-to-genre-hierarchy-selection" : step === "structure" ? "back-to-genre-hierarchy-configuration" : "back-to-genre-hierarchy-structure"} backDisabled={isApplying} inactive={Boolean(secondarySurface || preview)} onClose={onCancel} />
 		<form className="add-source-form genre-hierarchy-form" data-genre-hierarchy-stage={step} data-secondary-surface={secondarySurface ?? undefined} onSubmitCapture={handleRequiredNameSubmit} onSubmit={submit} noValidate onKeyDown={(event) => { if (secondarySurface && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSecondary(); } }}>
 			<div ref={scrollRef} className="add-source-scroll" inert={secondarySurface || preview || undefined} aria-hidden={secondarySurface || preview ? "true" : undefined}>
-				{step === "select" ? <SelectStep query={query} selection={selection} genres={genres} headingRef={selectHeadingRef} onQueryChange={(event) => setQuery(event.target.value)} onClearSearch={() => setQuery("")} onChoose={chooseGenre} onSelectAll={() => { const names = GENRE_CONCEPTS.map((concept) => concept.name); setSelection(names); setAdvanced((current) => pruneGenreExclusionConfiguration(current, names)); setKnownPreviewCounts({}); setDiagnostic(null); }} onClearAll={() => { setSelection([]); setAdvanced((current) => pruneGenreExclusionConfiguration(current, [])); setKnownPreviewCounts({}); setDiagnostic(null); }} onRemove={chooseGenre} /> : step === "configure" ? <ConfigureStep scope={scope} genres={genres} sharedMediaChoice={sharedMediaChoice} sortOptionIds={sortOptionIds} advanced={advanced} built={built} folderPlan={folderPlan} headingRef={configureHeadingRef} onRemove={chooseGenre} onPreview={openPreview} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onSortChange={(value) => { setSortOptionIds(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onOpenSecondary={openSecondary} /> : step === "structure" ? <StructureStep structurePlans={structurePlans} compositeChoices={compositeChoices} options={options} headingRef={structureHeadingRef} onStructureChange={(structure) => updateOptions({ structure })} onCompositeChange={(genreName, placement) => updateOptions({ compositePlacements: Object.freeze({ ...options.compositePlacements, [genreName]: placement }) })} /> : <AppearanceStep scope={scope} advancedUi={advanced.ui} planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
+				{step === "select" ? <SelectStep query={query} selection={selection} genres={genres} headingRef={selectHeadingRef} onQueryChange={(event) => setQuery(event.target.value)} onClearSearch={() => setQuery("")} onChoose={chooseGenre} onSelectAll={() => { const names = GENRE_CONCEPTS.map((concept) => concept.name); setSelection(names); setAdvanced((current) => pruneGenreExclusionConfiguration(current, names)); setKnownPreviewCounts({}); setDiagnostic(null); }} onClearAll={() => { setSelection([]); setAdvanced((current) => pruneGenreExclusionConfiguration(current, [])); setKnownPreviewCounts({}); setDiagnostic(null); }} onRemove={chooseGenre} /> : step === "configure" ? <ConfigureStep genres={genres} sharedMediaChoice={sharedMediaChoice} sortOptionIds={sortOptionIds} advanced={advanced} built={built} folderPlan={folderPlan} headingRef={configureHeadingRef} onRemove={chooseGenre} onPreview={openPreview} onSharedMediaChange={(value) => { setSharedMediaChoice(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onSortChange={(value) => { setSortOptionIds(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onAdvancedChange={(value) => { setAdvanced(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onOpenSecondary={openSecondary} /> : step === "structure" ? <StructureStep scope={scope} destinationCollectionTitle={destinationCollectionTitle} structurePlans={structurePlans} effectiveMedia={effectiveMedia} lastOneCollectionStructure={lastOneCollectionStructure} planResult={planResult} compositeChoices={compositeChoices} effectiveCompositePlacements={effectiveCompositePlacements} options={options} headingRef={structureHeadingRef} onStructureChange={chooseStructure} onCollectionGroupingChange={chooseCollectionGrouping} onCompositeChange={(genreName, placement) => updateOptions({ compositePlacements: Object.freeze({ ...options.compositePlacements, [genreName]: placement }) })} /> : <AppearanceStep scope={scope} advancedUi={advanced.ui} planResult={planResult} options={options} onOptionsChange={updateOptions} diagnostic={diagnostic} headingRef={appearanceHeadingRef} />}
 			</div>
 			{secondarySurface ? <div className="genre-secondary-surface" data-surface={secondarySurface}><GenreAdvancedSecondarySurface surface={secondarySurface} value={advanced} includedGenres={genres} sharedMediaChoice={sharedMediaChoice} onChange={(value) => { setAdvanced(value); setKnownPreviewCounts({}); setDiagnostic(null); }} onDone={closeSecondary} focusRef={secondaryHeadingRef} /></div> : null}
 			{!secondarySurface ? <footer className="add-source-actions"><button className="editor-apply" type="submit" disabled={primaryDisabled && !nameCorrection}>{primaryLabel}</button></footer> : null}

@@ -74,6 +74,26 @@ async function runTraktFoundationMatrix(connection, views, entrypoint = "__runTr
 	return cases;
 }
 
+async function runGenreStructureMatrix(connection) {
+	const views = [
+		{ width: 393, height: 852, stateCases: true }, { width: 1280, height: 900, stateCases: true },
+		{ width: 393, height: 852, enlargedText: true }, { width: 1280, height: 900, enlargedText: true },
+		{ width: 393, height: 400 }, { width: 393, height: 852, forcedColors: true },
+		{ width: 360, height: 800 }, { width: 900, height: 900 },
+	];
+	const results = [];
+	for (const view of views) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
+		await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }] });
+		await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
+		const checked = await connection.command("Runtime.evaluate", { expression: `window.__runGenreStructureScenario(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
+		if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+		results.push(checked.result.value);
+	}
+	await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: "none" }] });
+	return results;
+}
+
 async function runMountedPage() {
 	const timing = createValidationTiming("Source browser");
 	const traktPreviewOnly = process.env.TRAKT_PREVIEW_ONLY === "1";
@@ -90,6 +110,7 @@ async function runMountedPage() {
 	const previewPresentationOnly = process.env.TMDB_PREVIEW_PRESENTATION_ONLY === "1";
 	const previewPagesOnly = process.env.TMDB_PREVIEW_PAGES_ONLY === "1";
 	const genrePreviewOnly = process.env.TMDB_GENRE_PREVIEW_ONLY === "1";
+	const genreStructureOnly = process.env.TMDB_GENRE_STRUCTURE_ONLY === "1";
 	const decadesArtworkOnly = process.env.TMDB_DECADES_ARTWORK_ONLY === "1";
 	const contentCardsOnly = process.env.TMDB_DECADES_CONTENT_ONLY === "1";
 	const genreRulesOnly = process.env.TMDB_GENRE_RULES_ONLY === "1";
@@ -127,7 +148,7 @@ async function runMountedPage() {
 	const startedAt = Date.now();
 	const execution = await runWithLifecycleCleanup(async () => {
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-vite-"));
-		resources.vite = await createSourceEditMountedServer({ cacheDir: resources.viteCacheDir });
+		resources.vite = await createSourceEditMountedServer({ cacheDir: resources.viteCacheDir, reviewOnly: genreStructureOnly });
 		await resources.vite.listen();
 
 		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-mounted-"));
@@ -238,7 +259,7 @@ async function runMountedPage() {
   });
   await resources.pageConnection.command("Runtime.addBinding", { name: "sourceNamesSpace" });
 		const address = resources.vite.httpServer.address();
-		if (traktFoundationOnly || traktCreationOnly || traktPreviewOnly) {
+		if (genreStructureOnly || traktFoundationOnly || traktCreationOnly || traktPreviewOnly) {
 			const externalRequests = [];
 			{
 				// Local-only checks must fail, without dispatching, if any external request escapes.
@@ -258,6 +279,20 @@ async function runMountedPage() {
 				const state = await resources.pageConnection.command("Runtime.evaluate", { expression: "window.__builderSourceEditMounted?.status", returnByValue: true });
 				if (state.result.value === "complete") break;
 				await new Promise((resolve) => setTimeout(resolve, 50));
+			}
+			if (genreStructureOnly) {
+				const genreHierarchyWidths = [], genreNewFolderSummaryWidths = [];
+				for (const width of [360, 384, 393, 402, 412, 899, 900, 901, 1280]) {
+					await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width, height: width < 900 ? 852 : 900, deviceScaleFactor: 1, mobile: width < 900 });
+					for (const [entrypoint, results] of [["__runGenreHierarchyScenario", genreHierarchyWidths], ["__runGenreNewFolderSummaryScenario", genreNewFolderSummaryWidths]]) {
+						const checked = await resources.pageConnection.command("Runtime.evaluate", { expression: `window.${entrypoint}()`, awaitPromise: true, returnByValue: true });
+						if (checked.exceptionDetails) throw new Error(checked.exceptionDetails.exception?.description ?? checked.exceptionDetails.text);
+						results.push(checked.result.value);
+					}
+				}
+				const genreStructureCases = await runGenreStructureMatrix(resources.pageConnection);
+				assert.deepEqual(externalRequests, [], "Genre Structure must make zero external requests");
+				return { genreHierarchyWidths, genreNewFolderSummaryWidths, genreStructureCases };
 			}
 			if (traktPreviewOnly) {
     const views = [360, 384, 393, 402, 412, 899, 900, 901, 1280].map(width => ({ width, height: width < 900 ? 852 : 900 }));
@@ -1270,7 +1305,8 @@ async function runMountedPage() {
 					returnByValue: true,
 				});
 				if (studioScaleEvaluation.exceptionDetails) throw new Error(studioScaleEvaluation.exceptionDetails.exception?.description ?? studioScaleEvaluation.exceptionDetails.text);
-				return { ...result.results, listHierarchyCases, sourceNameCases, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
+				const genreStructureCases = await runGenreStructureMatrix(resources.pageConnection);
+				return { ...result.results, genreStructureCases, listHierarchyCases, sourceNameCases, requiredNameCases, sourceChooserWidths, sourceChooserTabletPortraitWidths, sourceChooserTabletLandscape, wideFontSourceChooser, tmdbListLayoutWidths, tmdbListPreviewWidths, sourceChooserKeyboard, shortHeightSourceChooser, shortHeightTmdbListLayout, shortHeightTmdbListPreview, peopleConfigureWidths, peoplePillStabilityWidths, peopleSelectionScrollWidths, franchiseReviewWidths, studioHierarchyWidths, networkHierarchyWidths, genreHierarchyWidths, genreNewFolderSummaryWidths, streamingHierarchyWidths, streamingAffinityDestinationWidths, streamingSelectionReconciliationWidths, streamingDuplicateConfirmation, networkLivePreviewWidths, genreLivePreviewWidths, sourceEditLivePreviewWidths, addSourceLivePreviewParityWidths, decadesLivePreviewWidths, decadeSourceLayoutWidths, decadeSourceOverlapFooterWidths, decadeSourceGenreKeyboard, decadeSourceLivePreviewWidths, shortHeightPreviewGeometry, networkDeferredArtwork, studioScale: studioScaleEvaluation.result?.value, genreToolbarWidths, decadesActionWidths, decadesGenreDesktop, decadesGenreWidths, decadesExclusionDesktop, decadesExclusionWidths };
 			}
 			if (result?.status === "error") throw new Error(result.message);
 			await new Promise((resolve) => setTimeout(resolve, 50));
@@ -1644,6 +1680,22 @@ test("mounted Genre selection toolbar remains grouped and overflow-free at every
 	}
 });
 
+test("mounted Genre progressive Structure preserves choices and accessible responsive decisions", () => {
+	assert.equal(mountedResults.genreStructureCases.length, 8);
+	for (const result of mountedResults.genreStructureCases) {
+		assert.ok(result.noMutation && result.keyboard && result.partialFocus && result.disclosure && result.configureDisclosure);
+		for (const layout of result.layouts) {
+			for (const flag of ["readable", "touchTargets", "noHorizontalOverflow", "oneScrollOwner", "footerReachable", "examplesLabelled", "nativeGroups", "illustrativeOutput", "diagramPosition", "originalPills", "compositeInformation", "resultAbsent"]) assert.equal(layout[flag], true, `${result.width}px ${layout.name}: ${flag}`);
+		}
+		if (result.states.length) {
+			assert.deepEqual(result.mappedIds, ["genre-folders", "media-folders", "separate-media-genre-folders", "separate-media-collections"]);
+			assert.deepEqual(result.states, ["remembered-arrangements", "appearance", "invalid-counts-and-name-recovery", "composite-fallback-and-restoration", "media-invalidation", "single-media-copy", "fixed-media-authority", "new-folder", "blocked-composite", "zero-additions", "safe-destination-titles"]);
+		}
+	}
+	console.log("GENRE_STYLE_REFERENCE " + JSON.stringify(mountedResults.genreStructureCases.find(result => result.width === 1280 && !result.enlargedText).styleReference));
+	console.log("GENRE_STRUCTURE " + JSON.stringify(mountedResults.genreStructureCases.map(({ width, height, enlargedText, forcedColors, layouts, states }) => ({ width, height, enlargedText, forcedColors, layouts: layouts.map(entry => entry.name), states }))));
+});
+
 test("mounted Genre hierarchy preserves browse-first focus, configuration state, atomic apply, and responsive scroll ownership", () => {
 	assert.deepEqual(mountedResults.genreHierarchyWidths.map((result) => result.width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const result of mountedResults.genreHierarchyWidths) {
@@ -1719,18 +1771,18 @@ test("mounted Genre hierarchy preserves browse-first focus, configuration state,
 			headingFocused: true,
 			bothDefault: true,
 			selectedCount: true,
-			allConfiguredRowsVisible: true,
+			configuredRowsCollapsed: true,
 			duplicateDisclosuresAbsent: true,
 			noDestinationChooser: true,
 			noOverride: true,
-			contextualSummary: true,
+			redundantSummaryAbsent: true,
 			mediaPills: true,
 			sortPills: true,
 			pillRounded: true,
 			noFixedNoteForBoth: true,
 			moviesFixedNote: "8 selected Genres are Series-only and will still create Series sources.",
 			seriesFixedNote: "11 selected Genres are Movie-only and will still create Movie sources.",
-		}, `${width}px Configure defaults and direct rows`);
+		}, `${width}px Configure defaults and collapsed rows`);
 		assert.deepEqual(result.secondaryState, {
 			open: true,
 			scrollInert: true,
@@ -1743,50 +1795,30 @@ test("mounted Genre hierarchy preserves browse-first focus, configuration state,
 		assert.deepEqual(result.structureState, {
 			stage: "structure",
 			headingFocused: true,
-			introCopy: "Choose how Genre folders are arranged within collections on your Nuvio Home screen.",
-			genreHierarchyHeadingAbsent: true,
-			structureLegendHidden: true,
-			choiceCount: 4,
-			defaultGenreFolders: true,
-			structureCounts: {
-				"genre-folders": "1 collection · 27 folders",
-				"media-folders": "1 collection · 2 folders",
-				"separate-media-genre-folders": "1 collection · 35 folders",
-				"separate-media-collections": "2 collections · 35 folders",
-			},
-			visibleCountsOmitSources: true,
+			introCopy: "Choose how your Genres appear in Nuvio.",
+			questions: ["Keep Movies and Series together?", "How should folders be organised?"],
+			folderIds: ["genre-folders", "media-folders", "separate-media-genre-folders"],
+			collectionIds: ["together", "separate-media-collections"],
+			selectedStructure: "genre-folders",
+			structureCounts: { "genre-folders": null, "media-folders": null, "separate-media-genre-folders": null },
 			structureCopy: {
-				"genre-folders": { title: "Genre folders", description: "One folder card for each Genre, with its available Movies and Series sources together inside." },
-				"media-folders": { title: "Movies + Series folders", description: "Create Movies and Series folder cards as needed, with Genre sources inside each." },
-				"separate-media-genre-folders": { title: "Separate Movie & Series Genre folders", description: "Create separate folder cards for each Movie and Series Genre." },
-				"separate-media-collections": { title: "Separate Movie & Series collections", description: "Create one Home collection for Movie Genres and another for Series Genres." },
+				"genre-folders": { title: "By genre", description: "Open a genre folder, then choose Movies or Series where available." },
+				"media-folders": { title: "By media type", description: "Open Movies or Series, then choose a genre." },
+				"separate-media-genre-folders": { title: "By genre and media type", description: "Give Movies and Series separate genre folders, such as Comedy Movies and Comedy Series." },
 			},
-			structureVisualEvidence: {
-				previewTypes: ["genre-folders", "media-folders", "separate-media-genre-folders", "separate-media-collections"],
-				visualHierarchyComplete: true,
-				visualPreviewsBounded: true,
-				countsReadable: true,
-				descriptionDiagramSpacingConsistent: true,
-				rowCountAlignmentPreserved: true,
-				selectedStyleClear: true,
-				nativeRadioSemantics: true,
-				previewsHiddenFromAccessibilityTree: true,
-			},
-			compositesBelowCards: true,
-			compositeHeading: "Where should combined Series genres go?",
-			compositeHelper: "TMDB groups some Series genres separately from Movies. Choose whether those Series sources get their own folders or are added to the matching Movie Genre folder(s).",
-			optionalPlacementAbsent: true,
-			compositeControlCount: 3,
+			resultAbsent: true,
+			collectionCounts: { together: "1 collection", "separate-media-collections": "2 collections" },
+			compositeInformation: true,
+			examplesLabelled: true, illustrativeOutput: true, diagramPosition: true, originalPills: true, nativeGroups: true, readable: true, touchTargets: true,
+			noHorizontalOverflow: true, oneScrollOwner: true, footerReachable: true,
+			compositeHeading: "Combined Series genres",
+			compositeInitiallyCollapsed: true,
 			actionTargets: ["standalone", "Action", "Adventure", "both"],
 			actionLabels: ["Keep its own folder", "Add to Action", "Add to Adventure", "Add to both"],
-			addToBothCount: "1 collection · 26 folders",
-			mediaFoldersSelected: true,
-			compositesHiddenForMedia: true,
-			genreFoldersReselected: true,
-			addToBothPreserved: true,
-			separateFoldersShowTitlesDefault: true,
-			manualTitleVisibilityPreserved: true,
-		}, `${width}px Structure counts and composite lifecycle`);
+			addToBothTotals: [1, 26, 36],
+			mediaFoldersSelected: true, compositesHiddenForMedia: true, genreFoldersReselected: true,
+			addToBothPreserved: true, separateFoldersShowTitlesDefault: true, manualTitleVisibilityPreserved: true,
+		}, `${width}px progressive Structure counts and composite lifecycle`);
 		assert.deepEqual(result.appearanceState, {
 			stage: "appearance",
 			headingFocused: true,

@@ -111,7 +111,7 @@ test("Genre hierarchy uses Select to Configure to Structure to Appearance with s
 	assert.doesNotMatch(flowSource, /DestinationChoices|Add all to this folder|One folder per genre|Add all anyway|Add anyway/);
 });
 
-test("Configure always renders compact logical placement rows with Preview and Remove actions", () => {
+test("Configure discloses compact logical placement rows with Preview and Remove actions", () => {
 	const configure = flowSource.slice(flowSource.indexOf("function ConfigureStep"), flowSource.indexOf("function AppearanceStep"));
 	assert.match(configure, /Configured Genres/);
 	assert.match(configure, /folderPlan\.groups\.map/);
@@ -122,7 +122,9 @@ test("Configure always renders compact logical placement rows with Preview and R
 	assert.match(flowSource, /group\.drafts\.map\(\(draft\) => draft\.editable\.title\)/);
 	assert.match(flowSource, /Preview titles<\/button>/);
 	assert.match(flowSource, /genre-hierarchy-configure-remove/);
-	assert.match(flowSource, /Selected: \{sortLabel\} · Filters:/);
+	assert.match(configure, /<details className="genre-hierarchy-configured-genres">/);
+	assert.match(configure, /Preview or remove selected Genres\./);
+	assert.doesNotMatch(configure, /genre-hierarchy-configuration-summary|configured Genre\{/);
 	assert.doesNotMatch(configure, /35 verbose|physical-source rows/);
 });
 
@@ -154,46 +156,50 @@ test("Configure reuses semantic pills and explains fixed-media Genres while Appe
 	assert.doesNotMatch(appearance, /GenreConfigureRow|onRemove|GenreAdvancedOptions/);
 });
 
-test("Structure presents plain-language plan-derived choices without changing composite boundaries", () => {
-	const structure = flowSource.slice(flowSource.indexOf("function StructureChoicePreview"), flowSource.indexOf("function AppearanceStep"));
+test("Structure keeps progressive copy and state local to the existing four planner meanings", () => {
+	const structure = flowSource.slice(flowSource.indexOf("function genreStructureChoices"), flowSource.indexOf("function AppearanceStep"));
+	for (const copy of [
+		"Choose how your Genres appear in Nuvio.", "Keep Movies and Series together?",
+		"Together in one collection", "Separate collections", "How should folders be organised?",
+		"By genre", "By media type", "By genre and media type", "Combined Series genres",
+		"Each keeps its own folder.", "Current placement", "Change placement", "Nuvio Home",
+	]) assert.ok(structure.includes(copy), copy);
 	assert.match(structure, /step=\{3\} phase="Structure"/);
-	assert.match(structure, /Choose how Genre folders are arranged within collections on your Nuvio Home screen\./);
-	assert.doesNotMatch(structure, />Genre hierarchy</);
-	assert.match(structure, /legend="Structure options" hideLegend/);
-	assert.match(choiceCardsSource, /hideLegend \? "visually-hidden"/);
-	assert.match(structure, /GENRE_HIERARCHY_STRUCTURES/);
-	assert.match(structureSource, /label: "Genre folders", description: "One folder card for each Genre, with its available Movies and Series sources together inside\."/);
-	assert.match(structureSource, /label: "Movies \+ Series folders", description: "Create Movies and Series folder cards as needed, with Genre sources inside each\."/);
-	assert.match(structureSource, /label: "Separate Movie & Series Genre folders", description: "Create separate folder cards for each Movie and Series Genre\."/);
-	assert.match(structureSource, /label: "Separate Movie & Series collections", description: "Create one Home collection for Movie Genres and another for Series Genres\."/);
-	assert.match(structure, /GENRE_STRUCTURE_PREVIEWS/);
-	assert.match(structure, /StructureChoicePreview/);
-	assert.match(structure, /genre-structure-wireframe/);
-	assert.match(structure, /genre-structure-wireframe-collection-title/);
-	assert.match(structure, /genre-structure-wireframe-folder-title/);
-	assert.match(structure, /genre-structure-wireframe-sources/);
-	assert.match(structure, /data-collection-count/);
+	assert.match(structure, /name="genre-hierarchy-collection-grouping"/);
+	assert.match(structure, /name="genre-hierarchy-structure"/);
+	assert.match(structure, /structurePlans\.has\("separate-media-collections"\)/);
+	assert.match(structure, /!separate \? <ChoiceCards/);
+	assert.match(structure, /nodeTitle\(destinationCollectionTitle, "collection"\)\.accessibleName/);
+	assert.match(structure, /New folders will be added to/);
 	assert.match(structure, /aria-hidden="true"/);
-	assert.match(structure, /counts\.collectionCount/);
-	assert.match(structure, /counts\.folderCount/);
-	assert.doesNotMatch(structure, /counts\.sourceCount/);
-	assert.doesNotMatch(structure, /Movies → Action|Action → Movies|Movie Genres → Action/);
-	assert.match(structure, /Where should combined Series genres go\?/);
-	assert.match(structure, /TMDB groups some Series genres separately from Movies\. Choose whether those Series sources get their own folders or are added to the matching Movie Genre folder\(s\)\./);
-	assert.doesNotMatch(structure, /Optional placement|Composite Series Genres|self-describing Series source/);
+	assert.match(structure, /!separate \? <p className="genre-structure-example-note">Examples show Tabbed Grid\. Choose your layout in Appearance\.<\/p> : null/);
+	assert.match(structure, /genre-example-home-groups/);
+	assert.match(structure, /source-layout-preview-tab-bar/);
+	assert.match(structure, /source-layout-preview-poster-grid/);
+	assert.doesNotMatch(structure, /genre-structure-wireframe|genre-structure-node-kind/);
+	assert.match(structure, /planResult\?\.ok \? planResult\.plan\.counts : null/);
+	assert.doesNotMatch(structure, /counts\.folderCount|genre-structure-result/);
+	const placement = structure.slice(structure.indexOf("function CombinedSeriesPlacement"), structure.indexOf("function StructureStep"));
+	assert.equal((placement.match(/Some Series genres combine/g) ?? []).length, 1);
+	assert.ok(placement.indexOf("Some Series genres combine") < placement.indexOf("Current placement"));
+	assert.ok(placement.indexOf("Current placement") < placement.indexOf("<details"));
+	assert.doesNotMatch(structure, /sourceCount|collectionCount: 0|folderCount: 0/);
+	assert.match(structure, /options\.structure === "genre-folders" && compositeChoices\.length/);
+	assert.match(structure, /entry\.blockedMessage \|\| fellBack/);
+	assert.match(structure, /Your previous placement is unavailable\. Keeping its own folder\./);
 	assert.match(structureSource, /label: "Keep its own folder"/);
-	assert.doesNotMatch(structureSource, /label: "Create its own folder"/);
-	assert.match(structure, /options\.structure === "genre-folders"/);
 	assert.match(flowSource, /scope !== "new-collection" \|\| effectiveMedia\.size !== 2/);
-	assert.match(flowSource, /folderTitleVisibilityTouched/);
-	assert.match(flowSource, /back-to-genre-hierarchy-structure/);
-	assert.match(styles, /\.genre-structure-choice-grid/);
-	assert.match(styles, /\.genre-structure-choice-grid > label\[data-selected="true"\]/);
-	assert.match(styles, /\.genre-structure-choice-grid > label:has\(input:focus-visible\)/);
-	assert.match(styles, /\.genre-structure-preview\s*\{[\s\S]*grid-template-rows:\s*auto auto;[\s\S]*align-content:\s*space-between;[\s\S]*align-self:\s*stretch;/);
-	assert.match(styles, /\.genre-structure-wireframe\[data-collection-count="2"\]/);
-	assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.genre-structure-wireframe-folder:nth-child\(n \+ 3\)/);
-	assert.match(styles, /\.genre-composite-placement/);
+	assert.match(flowSource, /built\.drafts\.map\(\(draft\) => draft\.editable\.mediaType\)/);
+	assert.match(flowSource, /lastOneCollectionStructure, setLastOneCollectionStructure/);
+	const planning = flowSource.slice(flowSource.indexOf("const structurePlans ="), flowSource.indexOf("const planResult ="));
+	assert.doesNotMatch(planning, /lastOneCollectionStructure/);
+	assert.match(styles, /\.genre-hierarchy-structure \.genre-structure-choice-grid/);
+	const structureStyles = styles.slice(styles.indexOf(".genre-hierarchy-structure .decades-choice-group"), styles.indexOf(".genre-collection-name-grid"));
+	assert.doesNotMatch(structureStyles, /text-overflow: ellipsis|white-space: nowrap|overflow: hidden/);
+	assert.match(structureStyles, /min-height: 44px/);
+	assert.match(structureStyles, /flex-wrap: wrap/);
+	assert.doesNotMatch(structureStyles, /\.studio-sort-choice-row|\.studio-sort-choices/);
+	assert.match(choiceCardsSource, /type="radio"/);
 });
 
 test("Genre Preview uses exact drafts, lazy media tabs, shared nested shell, and full-query cache identity", () => {
