@@ -2,7 +2,7 @@
 
 ## Current checkpoint - 2026-10-08
 
-**Verified main/base:** `768f2a10237e7741ebaae707724bf7a6061ea6b2`, the normal merge commit for [PR #298](https://github.com/davecollections/tmdb-id-lookup/pull/298). Collection Follow Home Layout is complete through [#296](https://github.com/davecollections/tmdb-id-lookup/issues/296) / merged [PR #297](https://github.com/davecollections/tmdb-id-lookup/pull/297); subsequent automated catalogue maintenance is not a product milestone. Its [documented contract](./BUILDER_KNOWLEDGE.md#collection-follow-home-layout-296) remains authoritative.
+**Verified baseline entering this status refresh:** `768f2a10237e7741ebaae707724bf7a6061ea6b2`, the normal merge commit for [PR #298](https://github.com/davecollections/tmdb-id-lookup/pull/298). Current GitHub `main` is authoritative for the live repository head. Collection Follow Home Layout is complete through [#296](https://github.com/davecollections/tmdb-id-lookup/issues/296) / merged [PR #297](https://github.com/davecollections/tmdb-id-lookup/pull/297); subsequent automated catalogue maintenance is not a product milestone. Its [documented contract](./BUILDER_KNOWLEDGE.md#collection-follow-home-layout-296) remains authoritative.
 
 The [canonical roadmap](#18-roadmap-and-mandatory-gates) records the revised pre-launch order, the deferred Community Collections acquisition outcome and bounded investigation candidates, merged through PR #298. This current-status refresh uses an approved documentation-only scope and PR without a tracking issue; it changes neither roadmap scope nor implementation or release gates.
 
@@ -132,7 +132,7 @@ This former queue is superseded by the [canonical roadmap](#18-roadmap-and-manda
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-10-08 (current-status hygiene after merged PR #298; verified main `768f2a10237e7741ebaae707724bf7a6061ea6b2`)
+Last reviewed: 2026-10-08 (current-status hygiene after merged PR #298; reviewed against baseline `768f2a10237e7741ebaae707724bf7a6061ea6b2`; live GitHub `main` is authoritative)
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 
