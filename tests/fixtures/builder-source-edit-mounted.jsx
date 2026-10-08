@@ -9147,9 +9147,18 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   evidence.noImplicitRequests = true; evidence.boundedScroll = true; evidence.focusRestored = true;
   if (layoutOnly) return evidence;
   if (guided && family === "decade") check(!dialog.querySelector('.decades-preview-catalogue summary'), "Decades Preview must be directly visible");
-  const trigger = editing ? dialog.querySelector('[data-action="preview-source-edit"]') : [...dialog.querySelectorAll('button')].find((element) => element.textContent.trim() === "Preview titles");
+  const configuredGenres = guided && family === "genre" ? check(dialog.querySelector('.genre-hierarchy-configured-genres'), "Configured Genres disclosure missing") : null;
+  if (configuredGenres) {
+   check(!configuredGenres.open, "Configured Genres should start collapsed");
+   await click(check(configuredGenres.querySelector(':scope > summary'), "Configured Genres summary missing"));
+   check(configuredGenres.open, "Configured Genres did not expand");
+  }
+  const trigger = editing ? dialog.querySelector('[data-action="preview-source-edit"]') : [...(configuredGenres ?? dialog).querySelectorAll('button')].find((element) => element.textContent.trim() === "Preview titles");
   check(trigger && !trigger.disabled, "current draft Preview unavailable: " + dialog.textContent.slice(-1600));
-  trigger.focus({ preventScroll: true }); await click(trigger);
+  if (configuredGenres) check(trigger.checkVisibility() && trigger.tabIndex >= 0, "configured Genre Preview is not visible and focusable");
+  trigger.focus({ preventScroll: true });
+  if (configuredGenres) check(document.activeElement === trigger, "configured Genre Preview did not receive focus");
+  await click(trigger);
   const modal = check(document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal'), "Preview modal missing");
   await wait(() => { const error = modal.querySelector('[role="alert"]'); if (error) throw new Error("Production Preview failed: " + error.textContent); return requests.length && !modal.querySelector('.studio-preview-state'); }, { label: "live combined-filter Preview", timeoutMs: 30000 });
   const first = requests.at(-1); check(first.status === 200, "production response status");
@@ -9162,7 +9171,11 @@ window.__runFamilyAdvancedScenario = async ({ family, scope, layoutOnly = false 
   check(images.length || modal.querySelector('[data-preview-empty-state]'), "missing real posters or exact empty state");
   evidence.previews.push({ url: first.url, status: first.status, totalResults: first.body.total_results, imageCount: images.length });
   await shot("preview"); await click(button(modal, "Close"));
-  check(document.activeElement === trigger && serializedValue(controller) === before, "Preview changed data or lost focus");
+  if (configuredGenres) {
+   check(document.activeElement === trigger, "Genre Preview did not restore trigger focus");
+   check(serializedValue(controller) === before, "Genre Preview changed Project data");
+   check(controller.getState().revision === initial.revision, "Genre Preview changed Project revision");
+  } else check(document.activeElement === trigger && serializedValue(controller) === before, "Preview changed data or lost focus");
   const count = requests.length; await click(trigger);
   const cached = document.querySelector('.source-edit-preview-modal, .genre-preview-modal, .decades-preview-modal, .streaming-preview-modal, .streaming-hierarchy-preview-modal');
   await wait(() => !cached.querySelector('.studio-preview-state'), { label: "cached Preview" }); check(requests.length === count, "complete query cache missed"); await click(button(cached, "Close"));
