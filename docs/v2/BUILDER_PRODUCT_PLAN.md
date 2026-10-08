@@ -2,9 +2,9 @@
 
 ## Current checkpoint - 2026-10-08
 
-**Verified main/base:** `b15e9b0e5eadbf1588a84cd9ad0602a2878c4292`. Collection Follow Home Layout is complete through [#296](https://github.com/davecollections/tmdb-id-lookup/issues/296) / merged [PR #297](https://github.com/davecollections/tmdb-id-lookup/pull/297); subsequent automated catalogue maintenance is not a product milestone. Its [documented contract](./BUILDER_KNOWLEDGE.md#collection-follow-home-layout-296) remains authoritative.
+**Verified baseline entering this status refresh:** `768f2a10237e7741ebaae707724bf7a6061ea6b2`, the normal merge commit for [PR #298](https://github.com/davecollections/tmdb-id-lookup/pull/298). Current GitHub `main` is authoritative for the live repository head. Collection Follow Home Layout is complete through [#296](https://github.com/davecollections/tmdb-id-lookup/issues/296) / merged [PR #297](https://github.com/davecollections/tmdb-id-lookup/pull/297); subsequent automated catalogue maintenance is not a product milestone. Its [documented contract](./BUILDER_KNOWLEDGE.md#collection-follow-home-layout-296) remains authoritative.
 
-The [canonical roadmap](#18-roadmap-and-mandatory-gates) records the revised pre-launch order, the deferred Community Collections acquisition outcome and bounded investigation candidates. This reconciliation uses an approved documentation-only scope and PR without a tracking issue; it changes no implementation or release gate.
+The [canonical roadmap](#18-roadmap-and-mandatory-gates) records the revised pre-launch order, the deferred Community Collections acquisition outcome and bounded investigation candidates, merged through PR #298. This current-status refresh uses an approved documentation-only scope and PR without a tracking issue; it changes neither roadmap scope nor implementation or release gates.
 
 <a id="current-checkpoint---2026-10-05"></a>
 
@@ -132,7 +132,7 @@ This former queue is superseded by the [canonical roadmap](#18-roadmap-and-manda
 
 Status: Durable product direction for the isolated v2 Builder
 
-Last reviewed: 2026-10-05 (roadmap/status reconciliation #292; verified main `872379b71fba494a2611e2d3e087dd46e237dba2`)
+Last reviewed: 2026-10-08 (current-status hygiene after merged PR #298; reviewed against baseline `768f2a10237e7741ebaae707724bf7a6061ea6b2`; live GitHub `main` is authoritative)
 
 This document records the current product direction recovered from the owner-supplied V1 and V2 project histories and reconciled with the repository, tests, manual Nuvio evidence, current GitHub history, and official Nuvio documentation. It is not a release claim or an implementation specification.
 

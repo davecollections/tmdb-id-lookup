@@ -24,9 +24,11 @@ Ordinary Edit Collection keeps Show All editable and independent across all thre
 All ten generic hierarchy planners share the three-mode validation contract: People, Franchises, Studios, Networks, Genres, Decades, Streaming, Advanced Discover, TMDB Lists and Trakt Lists. New Collection Follow preserves explicit true/false Show All. Existing hierarchy **Rows-only** creation normalization to true and hidden Show All remains intentionally unchanged; it is not applied to Follow or existing parent Collections. New Folder plans preserve the parent exactly and show inherited layout read-only. Folder `tileShape: FOLLOW_LAYOUT` remains unsupported/preserved. No new schema fields, importer/serializer normalization, V1 or Worker changes are involved.
 
 
-## Current checkpoint - 2026-10-05
+<a id="current-checkpoint---2026-10-05"></a>
 
-Verified main is `872379b71fba494a2611e2d3e087dd46e237dba2`. The [Product Plan checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) records the merged sequence and the [canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) owns priorities. Workspace Import/Merge artwork (#259/#260), Find (#261/#262), Move folders (#263/#264), bounded planning performance (#265, #266/#267), dependency-aware PR CI (#270/#271), ordering/Source Edit (#273/#274), TMDB Folder-per-List (#277/#278), the complete Trakt programme (#276), imported Discover (#286/#287), imported Trakt Preview (#288/#289) and Welcome handoff (#290/#291) are complete. Focused contracts below own semantics and evidence limits; historical task-stage gates are not current pending work.
+## Current checkpoint - 2026-10-08
+
+The verified baseline entering this status-hygiene pass was `768f2a10237e7741ebaae707724bf7a6061ea6b2`, the normal merge commit for roadmap reconciliation [PR #298](https://github.com/davecollections/tmdb-id-lookup/pull/298). Current GitHub `main` is authoritative for the live repository head; the [Product Plan checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-08) records current completion status and its [canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) owns the current pre-launch order. Workspace Import/Merge artwork (#259/#260), Find (#261/#262), Move folders (#263/#264), bounded planning performance (#265, #266/#267), dependency-aware PR CI (#270/#271), ordering/Source Edit (#273/#274), TMDB Folder-per-List (#277/#278), the complete Trakt programme (#276), imported Discover (#286/#287), imported Trakt Preview (#288/#289), Welcome handoff (#290/#291) and Collection Follow Home Layout (#296/#297) are complete. Focused contracts below own semantics and evidence limits; historical task-stage gates are not current pending work.
 
 Dingo remains unreleased at `/builder/` with `noindex, nofollow`. Its standalone `dingo.build` move and visual identity refresh are pre-launch direction, with technical/design decisions and explicit release approval still open. V1 stays in place. Current CI routing is owned by [Testing](../TESTING.md#local-and-ci-validation-groups-247); PRs need all required groups, while main/manual runs remain full.
 
@@ -150,7 +152,7 @@ The light 2026-09-16 freshness check found Desktop/Mobile unchanged and TV advan
 
 The #216 implementation extends the existing Studio/Network Advanced disclosure and family adapters with a narrow shared rating-pair boundary. Optional inclusive 0–10 decimal bounds retain configured presence, including explicit Minimum 0/Maximum 10. Effective-pair edits validate untouched stored values and patch only touched fields/owned mirrors. Unsupported shapes, conflicts and canonical decimal-to-exponent requests fail closed for exact Preview and deliberate rating edits while untouched imported data remains preservable. Safe canonical number/string comparison does not broaden request-mirror equivalence. Complete queries key the reused Preview cache, and existing frozen plans, configured placement and atomic application carry the pair. See [Studio](./BUILDER_STUDIOS.md#shared-rating-bounds-216), [Network](./BUILDER_NETWORKS.md#shared-rating-bounds-216) and [testing](../TESTING.md#mounted-browser-lifecycle). No Worker, V1, standalone Discover, dependency or CI behavior changes are included. The rating implementation is merged through PR #217; #218 / PR #219 subsequently extended the same supported native filters.
 
-Current product status and future priorities are owned by the [Product Plan canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates). The [current checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-09-22) supersedes the earlier Studio-only milestone. Shared Advanced #218 / PR #219 and #220 / PR #221 are complete for their approved fields; remaining capability questions do not reopen that sequence.
+Current product status and future priorities are owned by the [Product Plan canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates). The [current Product Plan state](./BUILDER_PRODUCT_PLAN.md#current-state) supersedes the earlier Studio-only milestone. Shared Advanced #218 / PR #219 and #220 / PR #221 are complete for their approved fields; remaining capability questions do not reopen that sequence.
 
 ## Network Minimum votes (#213 / PR #214)
 
@@ -182,7 +184,7 @@ Issue [#200](https://github.com/davecollections/tmdb-id-lookup/issues/200) compl
 
 Status: Active isolated builder and contract groundwork
 
-Last reviewed: 2026-10-05 (current-status reconciliation #292; earlier evidence retains its original dates)
+Last reviewed: 2026-10-08 (current-status hygiene after merged PR #298; earlier evidence retains its original dates)
 
 
 ## 2026-09-07 - Multiple creation sorts (#198; approved for publication)

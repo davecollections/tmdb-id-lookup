@@ -1,6 +1,6 @@
 # Trakt Lists creation
 
-**Current status — 2026-10-05:** B3 [#282 / PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283) and C [#284 / PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) are merged, including the separately delivered service dependency and bounded production/physical acceptance. Parent #276 is complete. #288 / PR #289 subsequently extends supported imported Source Edit Preview metadata; see [the current source contract](./BUILDER_TRAKT_SOURCES.md). Dated phase gates below are historical; the [Product Plan](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) owns current status and priorities.
+**Completion status — 2026-10-05:** B3 [#282 / PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283) and C [#284 / PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) are merged, including the separately delivered service dependency and bounded production/physical acceptance. Parent #276 is complete. #288 / PR #289 subsequently extends supported imported Source Edit Preview metadata; see [the current source contract](./BUILDER_TRAKT_SOURCES.md). Dated phase gates below are historical; the Product Plan owns [current completion status](./BUILDER_PRODUCT_PLAN.md#current-state) and the [canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates).
 
 ## C #284 count clarity and physical acceptance — 2026-10-03
 
