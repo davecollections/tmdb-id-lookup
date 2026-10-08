@@ -1,6 +1,6 @@
 # Native Trakt Source Foundation
 
-**Current status — 2026-10-05:** B2 [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280), B3 [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283), C [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) and imported Preview [PR #289](https://github.com/davecollections/tmdb-id-lookup/pull/289) are merged; parent #276 is complete. Earlier phase/checkpoint descriptions retain their dated evidence, not open integration gates. The [Product Plan](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) owns the current roadmap.
+**Completion status — 2026-10-05:** B2 [PR #280](https://github.com/davecollections/tmdb-id-lookup/pull/280), B3 [PR #283](https://github.com/davecollections/tmdb-id-lookup/pull/283), C [PR #285](https://github.com/davecollections/tmdb-id-lookup/pull/285) and imported Preview [PR #289](https://github.com/davecollections/tmdb-id-lookup/pull/289) are merged; parent #276 is complete. Earlier phase/checkpoint descriptions retain their dated evidence, not open integration gates. The [Product Plan canonical roadmap](./BUILDER_PRODUCT_PLAN.md#18-roadmap-and-mandatory-gates) owns current priorities.
 
 ## Imported exact Preview boundary (#288)
 

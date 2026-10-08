@@ -156,7 +156,9 @@ git rev-parse HEAD
 git rev-parse origin/main
 ```
 
-This formal Git preflight is not required for ordinary conversation or read-only product research. Before edits begin, confirm that `main` equals `origin/main` and the worktree is clean. Inspect every unexpected newer commit before continuing. Legitimate automated maintenance may be accepted only after confirming that it does not overlap the task. Stop for conflicts, unexpected manual changes, unrelated local work, or ambiguous scope.
+This formal Git preflight is not required for ordinary conversation or read-only product research. For research or capability/status assessment claiming what Dingo currently supports, first verify current `origin/main` or GitHub `main` and use it as the status authority. An active long-lived feature or experiment checkout is not automatically the current capability baseline. This requires no local branch switch, pull or reset; explicitly historical research may use an older revision when that revision is the intended subject.
+
+Before edits begin, confirm that `main` equals `origin/main` and the worktree is clean. Inspect every unexpected newer commit before continuing. Legitimate automated maintenance may be accepted only after confirming that it does not overlap the task. Stop for conflicts, unexpected manual changes, unrelated local work, or ambiguous scope.
 
 ## 6. Scope control
 

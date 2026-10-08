@@ -32,9 +32,9 @@ At short landscape heights, the compact Sort body can scroll while its heading a
 
 **Export & Send**, completed through [#244 / PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245), appears beneath the first-row Back/help controls when a Collection contains a Folder with a Source, or when retained Send history must remain reachable. The compact modal shows totals, filename and blocking problems, then Send to Nuvio, Download JSON and Copy JSON; non-blocking preservation warnings remain internal. Send reuses the shell, focus trap and body lock, with non-dismissible active progress and readback-verified success. Verified history stays in Last Send inside Export & Send; unresolved attempts retain compact workspace attention. The application owns the memory-only connection and Send coordinator across view/project changes. Diagnostic editors return to current validation and restore focus. See [the Export contract](./BUILDER_EXPORT.md) and [the connection contract](./BUILDER_NUVIO_CONNECTION.md).
 
-Status: current shell includes the merged TMDB/Trakt creation families and standalone Discover, Workspace Import, Find, Move folders and hierarchy ordering/Source Edit polish. The [Product Plan checkpoint](./BUILDER_PRODUCT_PLAN.md#current-checkpoint---2026-10-05) owns current completion status; dated implementation evidence below remains historical.
+Status: current shell includes the merged TMDB/Trakt creation families and standalone Discover, Workspace Import, Find, Move folders and hierarchy ordering/Source Edit polish. The [current Product Plan state](./BUILDER_PRODUCT_PLAN.md#current-state) owns current completion status; dated implementation evidence below remains historical.
 
-Last reviewed: 2026-10-05 (current-status reconciliation)
+Last reviewed: 2026-10-08 (current-status reference review)
 
 Ordinary Source editors place identity/context before the existing Source name/reset, then editable role/media, sort, Filters and Preview titles where supported. Fixed identities stay fixed. Franchise replacement stays with identity; its existing default-name reset follows naming. Full Discover retains its separate Filters → Review editor. No additional Source-name controls are implied for Add Source flows.
 
@@ -253,7 +253,7 @@ Addon details omit the redundant Addon prefix. Exact `aio-metadata` maps to `AIO
 
 Source cards retain their CSS, badge, spacing, minimum height and natural wrapping without clipping. Visible-title cards expose their descendant details once; hidden-title cards retain their existing accessible name and associate a separate comma-separated description through `aria-describedby`, with the visual metadata hidden from the accessibility tree.
 
-Titles made only of the confirmed U+200E character display `Hidden title` with an `Invisible in Nuvio` badge and meaningful selection, Edit, and movement names instead of producing blank cards or labels. Unusual source-title values fall back to the existing source identity labels rather than being stringified. The hierarchy no longer renders a selected-node detail panel; detailed review remains deferred to the future Create JSON/review workflow.
+Titles made only of the confirmed U+200E character display `Hidden title` with an `Invisible in Nuvio` badge and meaningful selection, Edit, and movement names instead of producing blank cards or labels. Unusual source-title values fall back to the existing source identity labels rather than being stringified. The hierarchy no longer renders a selected-node detail panel. The implemented [Export & Send flow](./BUILDER_EXPORT.md) owns output confirmation, blocking problems and delivery.
 
 The UI never renders full raw JSON, arbitrary unknown/community fields, serializer output, migration projections, exception objects, stack traces, or builder internal IDs.
 
