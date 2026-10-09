@@ -100,8 +100,8 @@ test("workflow has one planner, independent Core, exactly gated optional workers
 	assert.match(workflow, /permissions:\s+actions: read\s+contents: read\s+# Only newer/);
 	assert.doesNotMatch(workflow, /paths-ignore:|paths:|deploy-pages@|continue-on-error|secrets\.|dorny\/|paths-filter/);
 	assert.equal((workflow.match(/npm ci/g) ?? []).length, 4);
-	assert.equal(selectValidationChecks().length, 113);
-	assert.equal(selectValidationChecks("core").length, 110);
+	assert.equal(selectValidationChecks().length, 114);
+	assert.equal(selectValidationChecks("core").length, 111);
 });
 
 test("workflow concurrency supersedes only the same PR and never groups main/manual runs together", () => {

@@ -43,6 +43,7 @@ export const validationChecks = Object.freeze([
 	["--test", path.join("tests", "builder-serializer.test.mjs")],
 	["--test", path.join("tests", "builder-migration.test.mjs")],
 	["--test", path.join("tests", "builder-controller.test.mjs")],
+	["--test", path.join("tests", "builder-scoped-genre-exclusions.test.mjs"), path.join("tests", "builder-scoped-genre-exclusions-controller.test.mjs")],
 	["--test", path.join("tests", "builder-nuvio-import.test.mjs")],
 	["--test", path.join("tests", "builder-nuvio-send.test.mjs")],
 	["--test", path.join("tests", "builder-nuvio-send-ui.test.mjs")],

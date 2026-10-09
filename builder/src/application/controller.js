@@ -1,3 +1,4 @@
+import { planScopedGenreExclusions } from "../source-edit/scoped-genre-exclusions.js";
 import { COLLECTION_VIEW_MODES } from "../nuvio/collection-presentation.js";
 import {
 	checkInternalIdUniqueness,
@@ -113,6 +114,7 @@ export function createBuilderController(options = {}) {
 	/** @type {ControllerState} */
 	let state = createInitialState(initialProject, createMigrationPreview(initialProject));
 	const listeners = new Set();
+	const scopedGenreReviews = new WeakMap();
 
 	function getState() {
 		return state;
@@ -1124,6 +1126,50 @@ export function createBuilderController(options = {}) {
 		return actionResult(true);
 	}
 
+
+	// Reviews are ephemeral capabilities owned by this controller, never project data.
+	function reviewScopedGenreExclusions(request) {
+		const plan = planScopedGenreExclusions(state.project, request);
+		if (!plan.ok) return actionResult(false, plan.errors);
+		const review = deepFreeze(cloneJsonValue(plan));
+		scopedGenreReviews.set(review, {
+			project: state.project,
+			request: { scope: review.scope, genreNames: review.genreNames },
+		});
+		return actionResult(true, [], [], { review });
+	}
+
+	function applyScopedGenreExclusions(review) {
+		const fail = (code, message) => actionResult(false, [controllerDiagnostic(
+			code, "$controller.applyScopedGenreExclusions", message,
+		)]);
+		const authority = scopedGenreReviews.get(review);
+		if (!authority) return fail("INVALID_SCOPED_GENRE_REVIEW", "Review these changes again before applying.");
+		// Consume before publication, including re-entrant subscriber calls and no-ops.
+		scopedGenreReviews.delete(review);
+		if (authority.project !== state.project) {
+			return fail("STALE_SCOPED_GENRE_REVIEW", "The project changed. Review the current scope before applying.");
+		}
+		const rebuilt = planScopedGenreExclusions(state.project, authority.request);
+		if (!rebuilt.ok || !jsonValuesEqual(review, rebuilt)) {
+			return fail("INVALID_SCOPED_GENRE_REVIEW", "The reviewed scope or changes no longer match. Nothing was changed.");
+		}
+		const changed = rebuilt.outcomes.filter((row) => row.status === "changed");
+		if (!changed.length) return actionResult(true, [], [], { totals: review.totals, changedTargets: [] });
+		try {
+			const project = updateEditableValuesMany(state.project, changed.map((row) => ({
+				internalId: row.sourceInternalId, editablePatch: row.patch,
+			})));
+			commitProjectEdit(project);
+		} catch {
+			return fail("SCOPED_GENRE_APPLY_FAILED", "The Genre exclusions could not be applied atomically. Nothing was changed.");
+		}
+		return actionResult(true, [], [], {
+			totals: review.totals,
+			changedTargets: changed.map((row) => ({ nodeType: "source", internalId: row.sourceInternalId })),
+		});
+	}
+
 	function applyPresentationUpdates(updates) {
 		const path = "$controller.applyPresentationUpdates";
 		if (!Array.isArray(updates)) {
@@ -1611,6 +1657,8 @@ export function createBuilderController(options = {}) {
 		extendCollectionWithFoldersAndSources,
 		createCollectionsWithFoldersAndSources,
 		updateNode,
+		reviewScopedGenreExclusions,
+		applyScopedGenreExclusions,
 		applyPresentationUpdates,
 		moveNode,
 		removeNode,

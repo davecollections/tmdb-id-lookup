@@ -1,5 +1,22 @@
 # Repository Testing
 
+## Scoped Genre exclusions foundation (#302)
+
+Stage 1 is pure planning/controller work only. Run:
+
+```powershell
+node --test tests/builder-scoped-genre-exclusions.test.mjs tests/builder-scoped-genre-exclusions-controller.test.mjs
+```
+
+The suites cover supported/unsupported adapters and media, all official Genre mappings, malformed containers and expressions, unsafe/unknown filters and mirrors, whole-Source conflicts, no-ops, exact serialized preservation, edited overlays, same-Folder candidate convergence and final-set collision invariants. Duplicate details remain grouped even for 1,200 identical Sources. Other large local cases check bounded membership traversal and a 1,600-Source atomic batch with no cap.
+
+Controller cases cover deep freezing and controller-owned review identity; stale source/parent/scope edits, movement, insertion, deletion, import and reset; request mutation, clones, forged patches, proxies, cross-controller reviews and replay; selection-only changes; single publication, re-entrant subscribers, a fault during publication preparation, preserved diagnostics on no-op, and complete snapshot retention on failure. These fixtures are authored local project structures and pure contract data, not fabricated external-service responses.
+
+Relevant existing regressions are Source Edit foundation/preview, controller/domain, presentation updates, import/merge/migration, collection preservation, compatibility corpus, serialization, family Advanced, Discover compatibility/core, native variants and source occurrence evidence. No mounted browser or visual acceptance is claimed by Stage 1. UI integration and actual phone/desktop owner review remain later gates.
+
+Both new suites are registered in the canonical `scripts/check-all.mjs` core inventory. Existing routing remains unchanged: controller/script changes require all four CI groups, and unclassified new paths fail broad. Registration does not narrow routing or change workflows. The focused pure regression run is appropriate at this foundation-only checkpoint; the complete mounted/full validation and owner visual acceptance belong to the later integration readiness gate.
+
+
 ## Collection Follow Home Layout (#296)
 
 The [three-mode contract and pinned client evidence](v2/BUILDER_KNOWLEDGE.md#collection-follow-home-layout-296) are covered by the existing node-editor, presentation-update, Bulk Edit, view-model and creation-family suites. The shared pure helper exercises all ten planners with every layout and boolean Show All value, real atomic application/revalidation, rejection of unknown authored modes, and unchanged existing parent metadata when creating folders. Editor tests cover case-insensitive supported imports, original casing, absent/unknown/unusual JSON values, untouched-only patches, no-op, unrelated edits and export/reimport.
