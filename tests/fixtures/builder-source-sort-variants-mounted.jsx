@@ -17,7 +17,7 @@ import {
 // This exercises real components/providers/requester/cache with injected transport;
 // it is not evidence of live TMDB availability or owner acceptance.
 export async function runSourceSortVariantsScenario(helpers, { wordingOnly = false } = {}) {
-	const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, inputContaining, setInputValue, titlePreviewGeometry } = helpers;
+	const { createController, importSources, clickAndSettle: click, afterCommittedEffects: settle, serializedValue, setInputValue, titlePreviewGeometry } = helpers;
 	const check = (condition, message) => { if (!condition) throw new Error(message); };
 	const required = (element, label) => { check(element, `${label} missing`); return element; };
 	const results = [];
@@ -86,8 +86,9 @@ export async function runSourceSortVariantsScenario(helpers, { wordingOnly = fal
 			} else if (guided) {
 				await click(required(dialog.querySelector('[data-decade-preset="1980s"]'), "1980s"));
 				await submit();
-				const years = required(inputContaining(dialog, "Individual years"), "years");
-				if (!years.checked) await click(years);
+				const years = required(dialog.querySelector('button[data-decade-content="individualYears"]'), "years");
+				if (years.getAttribute("aria-pressed") !== "true") await click(years);
+				check(years.getAttribute("aria-pressed") === "true", name + " Individual years not selected");
 			} else {
 				await click(required(dialog.querySelector('input[name="decade-source-decade"][value="1980s"]'), "1980s"));
 				await click(required(dialog.querySelector('input[name="decade-source-year"][value="year-1980"]'), "1980"));
@@ -123,8 +124,20 @@ export async function runSourceSortVariantsScenario(helpers, { wordingOnly = fal
 				custom = "My exact — title";
 				await act(async () => { setInputValue(required(dialog.querySelector('input[data-source-name]'), "custom name"), custom); await settle(); });
 			}
-			if (guided && family === "decade") await click(required(dialog.querySelector(".decades-preview-catalogue > summary"), "Preview disclosure"));
-			const trigger = required([...dialog.querySelectorAll('button[aria-haspopup="dialog"]')].find((button) => button.textContent === "Preview titles"), `${name} Preview`);
+			const configuredGenres = guided && family === "genre" ? required(dialog.querySelector(".genre-hierarchy-configured-genres"), name + " Configured Genres") : null;
+			if (configuredGenres) {
+				check(!configuredGenres.open, name + " Configured Genres should start collapsed");
+				await click(required(configuredGenres.querySelector(":scope > summary"), name + " Configured Genres summary"));
+				check(configuredGenres.open, name + " Configured Genres did not expand");
+			}
+			const decadeCatalogue = guided && family === "decade" ? required(dialog.querySelector(".decades-preview-catalogue"), name + " Preview catalogue") : null;
+			if (decadeCatalogue) check(decadeCatalogue.checkVisibility() && !decadeCatalogue.querySelector("summary"), name + " Preview catalogue should be directly visible");
+			const trigger = required([...(configuredGenres ?? decadeCatalogue ?? dialog).querySelectorAll('button[aria-haspopup="dialog"]')].find((button) => button.textContent === "Preview titles"), `${name} Preview`);
+			if (configuredGenres || decadeCatalogue) check(trigger.checkVisibility() && !trigger.disabled && trigger.tabIndex >= 0, name + " Preview should be visible, enabled and focusable");
+			if (configuredGenres) {
+				trigger.focus({ preventScroll: true });
+				check(document.activeElement === trigger, name + " Preview did not receive focus");
+			}
 			await click(trigger);
 			const modal = required(document.querySelector(".franchise-preview-modal"), `${name} open Preview`);
 			if (wordingOnly) {
