@@ -1,5 +1,49 @@
 # Native Source Editing
 
+## Scoped Genre exclusions foundation (#302)
+
+[Issue #302](https://github.com/davecollections/tmdb-id-lookup/issues/302) adds a one-time additive operation over the existing physical Sources in one explicitly selected Collection or Folder. Stage 1 supplies pure planning and controller APIs only; it exposes no UI and does not change ordinary Source Edit, Global display settings, export, or persistent parent settings. The full issue remains open until UI integration and owner acceptance are complete.
+
+### API and review authority
+
+`planScopedGenreExclusions(project, request)` in `builder/src/source-edit/scoped-genre-exclusions.js` is a pure planner. It accepts exactly:
+
+```js
+{
+  scope: { nodeType: "collection", internalId: collectionInternalId }, // or "folder"
+  genreNames: ["Comedy", "Horror"]
+}
+```
+
+Scope is mandatory and identity-based; no workspace selection or name supplies a default. Genre names must be unique official catalogue concepts. The planner orders proposed additions by the existing catalogue, inspects physical Sources in saved order and returns `totals`, ordered `outcomes` and shared `duplicateGroups`. Each outcome records exact parent/Source IDs and positions, adapter/media, applicable/inapplicable/conflicting Genres, before/after exclusions, reason, comparison identities and a minimal editable patch for a changed Source. Changed + unchanged + skipped equals the inspected physical Source count. A duplicate outcome references a group ID; member IDs are stored once per group rather than expanded on every row. Legacy compatibility projections are not additional physical Sources.
+
+`controller.reviewScopedGenreExclusions(request)` returns an ordinary action result with `review` on success, without publishing state. The review is detached and deeply frozen. A private per-controller WeakMap binds the exact review object to the opening immutable project and request; the pure planner output is not mutation authority.
+
+`controller.applyScopedGenreExclusions(review)` accepts only that controller's issued object. Cloned, forged, proxied and cross-controller objects are rejected. Every recognized Apply attempt consumes its review, including no-op or failed attempts. Apply requires the same project object, rebuilds the entire plan, and compares all bindings, outcomes, identities and patches before mutation. Content changes anywhere invalidate the review; selection or diagnostics alone do not. There is no arbitrary patch input or automatic acceptance of a newly changed subset.
+
+A successful nonempty batch uses the existing `updateEditableValuesMany` once and `commitProjectEdit` once, retaining current selection. Errors are returned without publishing diagnostics. Failure and no-op preserve the entire current state snapshot, including project, revision, dirty state and subscribers. No new Undo or automatic Export/Send is implied.
+
+### Eligibility and preservation
+
+Candidates are native COMPANY Movie/TV, NETWORK TV, and configurations accepted by the existing Genre, Decade/Year, Streaming or Full Discover adapter. The registry decides the adapter from current structure, not creation provenance. PERSON, DIRECTOR, COLLECTION, LIST, Trakt, addons, opaque Sources and unsupported identities/media remain unchanged.
+
+Eligibility requires safe raw and editable filter containers, effective-source resolution, supported scalar/expression types, official media-correct Genre IDs, resolved imported mirrors and the existing filter and adapter validators. Unknown meaningful filter semantics, pipe Genre/company exclusions, malformed or contradictory filters and unsafe configurations are skipped before no-op classification. Supported pipe keyword/provider exclusions retain their existing contract. Unknown top-level metadata and inactive filter placeholders are preserved. Native COMPANY/NETWORK validation also includes the entity inclusion fixed by the resolver, so an imported exclusion cannot hide a contradiction with that entity.
+
+Existing adapters can have stricter representation requirements than general filter validation. For example, some Discover imports with numeric strings do not qualify for the current registered editor. They are preserved/skipped, never normalized into eligibility. Missing canonical fields may route a Source through Full Discover instead of a family editor. Existing sort values are untouched and remain subject to the current adapter's preservation boundary.
+
+Applicable missing IDs are appended to the existing comma-token order. Media-specific names are not inferred equivalent: Horror has no TV substitution, and Action does not imply Action & Adventure. A requested inclusion overlap, for either AND or OR inclusions, skips the entire Source. Already-excluded and media-inapplicable outcomes make no patch.
+
+Patches reuse `patchTouchedDiscoverFilters` with only `withoutGenres` touched and narrowly owned equivalent mirrors. They retain the full current editable filters map because `updateEditableValuesMany` merges editable values shallowly; a partial filters map would erase other recognized filters. Existing Sources are not reconstructed from creation drafts. Adapter validation checks detached candidates; only the touched-field patch is published. Raw imports, unknown metadata, non-owned filters and their types, source/parent identities, titles, ordering and presentation survive. Actual serialization comparisons, including previously edited overlays, verify this boundary.
+
+Duplicate comparison reuses the existing family keys, including literal exclusion order. Every Folder's final candidate set is checked against changed and unchanged siblings. All changed members of a collision group are skipped; restoring originals queues affected groups for another check. Existing unchanged duplicates remain, and other Folders do not block the operation. The planner uses the shared project-source snapshot and grouped identities rather than repeated per-Source project scans. There is no Source cap.
+
+### Contract evidence and limits
+
+The 2026-10-10 source check confirmed nullable-string Genre fields and native Discover-family forwarding in [NuvioTV `6377bee`](https://github.com/NuvioMedia/NuvioTV/blob/6377bee8cc644ecd8048a771ced61f06bcdf7946/app/src/main/java/com/nuvio/tv/core/tmdb/TmdbCollectionSourceResolver.kt), [NuvioDesktop `bc4566a`](https://github.com/NuvioMedia/NuvioDesktop/blob/bc4566a5c474f5f90c6dc40062723f37f823c59e/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/TmdbCollectionSourceResolver.kt) and [NuvioMobile `78e6373`](https://github.com/NuvioMedia/NuvioMobile/blob/78e6373a86e0fdb6336086ab8f8ad7478a9d8737/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/TmdbCollectionSourceResolver.kt). Their licences were verified as GPL-3.0; only contract facts informed this independent implementation, with no substantive upstream code reuse.
+
+This does not establish installed-client or nuvio.tv acceptance. Existing client preservation differences, including TV Manage from phone, remain outside this operation. Review counts describe physical Sources, not title-result estimates; planning and Apply make no external requests.
+
+
 ## Imported native Trakt exact Preview (#288)
 
 The current Trakt editor owns title and supported sort/direction; provider, List ID and media stay fixed. Its detached unsaved Preview now admits the explicit [preserved metadata boundary](./BUILDER_TRAKT_SOURCES.md#imported-exact-preview-boundary-288): string/null id/name/genre, null/plain-object filters (including populated criteria), and null-only generic Desktop placeholders. Native Trakt runtime ignores those fields; no Discover validation or raw-data rewriting is applied. Unknown top-level fields still fail closed, including null/false/empty values. Preview never saves; Cancel, no-op and deliberate minimal title/sort saves retain raw metadata.
