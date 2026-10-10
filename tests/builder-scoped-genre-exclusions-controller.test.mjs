@@ -207,3 +207,239 @@ test("large atomic batch has no Source cap or intermediate publications", () => 
 	assert.equal(publications, 1);
 	assert.ok(s.controller.getState().project.collections[0].folders[0].sources.every((source) => source.editable.filters.withoutGenres === "27"));
 });
+
+function multiSetup(options) {
+	const s = setup(options);
+	s.request = { sourceInternalIds: s.folder.sources.map((source) => source.internalId), genreNames: ["Horror"] };
+	return s;
+}
+
+test("new review owns detached canonical arrays and remains unaffected by caller mutations", () => {
+	const s = multiSetup(), ids = s.request.sourceInternalIds;
+	s.request.sourceInternalIds = [ids[2], ids[0], ids[2]];
+	const review = assertNoPublication(s.controller, () => s.controller.reviewScopedGenreExclusions(s.request)).review;
+	assert.deepEqual(review.sourceInternalIds, [ids[0], ids[2]]);
+	assert.equal(Object.hasOwn(review, "scope"), false);
+	for (const value of [review, review.sourceInternalIds, review.genreNames, review.outcomes, review.outcomes[0],
+		review.outcomes[0].patch.filters, review.totals, review.duplicateGroups]) assert.equal(Object.isFrozen(value), true);
+	assert.throws(() => { review.sourceInternalIds.push(ids[1]); }, TypeError);
+	assert.throws(() => { review.outcomes[0].status = "unchanged"; }, TypeError);
+	s.request.sourceInternalIds.splice(0, 3, s.collection.folders[1].sources[0].internalId);
+	s.request.genreNames[0] = "Comedy";
+	s.request.sourceInternalIds = [];
+	const result = s.controller.applyScopedGenreExclusions(review);
+	assert.equal(result.ok, true);
+	assert.deepEqual(result.changedTargets.map((target) => target.internalId), [ids[0], ids[2]]);
+	const sources = s.controller.getState().project.collections[0].folders[0].sources;
+	assert.equal(sources[0].editable.filters.withoutGenres, "27");
+	assert.equal(sources[1], s.folder.sources[1]);
+	assert.equal(sources[2].editable.filters.withoutGenres, "27");
+	assert.equal(s.controller.getState().project.collections[0].folders[1], s.collection.folders[1]);
+});
+
+test("one Source-ID review publishes all selected branches together with exact serialization", () => {
+	const s = setup();
+	assert.equal(s.controller.appendImportedCollections([{ id: "second", title: "Second", folders: [{
+		id: "second-folder", title: "Folder", sources: [
+			{ provider: "tmdb", tmdbSourceType: "NETWORK", tmdbId: 12, mediaType: "TV", sortBy: "popularity.desc", filters: {} },
+			{ provider: "tmdb", tmdbSourceType: "COMPANY", tmdbId: 42, mediaType: "MOVIE", sortBy: "popularity.desc", filters: {} },
+		],
+	}] }]).ok, true);
+	const project = s.controller.getState().project, a = project.collections[0], b = project.collections[1];
+	const chosen = [a.folders[0].sources[1], a.folders[1].sources[0], ...b.folders[0].sources];
+	s.request = { sourceInternalIds: [...chosen].reverse().map((source) => source.internalId), genreNames: ["Horror"] };
+	s.controller.selectNode(a.folders[0].sources[0].internalId);
+	const before = s.controller.getState(), expected = structuredClone(serializeNuvioProject(before.project).value);
+	const review = reviewFor(s), publications = [];
+	assert.deepEqual(review.sourceInternalIds, chosen.map((source) => source.internalId));
+	assert.deepEqual(review.totals, { inspected: 4, changed: 3, unchanged: 1, skipped: 0 });
+	s.controller.subscribe(() => publications.push(s.controller.getState()));
+	const result = s.controller.applyScopedGenreExclusions(review), after = s.controller.getState();
+	assert.equal(result.ok, true);
+	assert.deepEqual(publications, [after]);
+	assert.equal(after.revision, before.revision + 1);
+	assert.equal(after.selection, before.selection);
+	expected[0].folders[0].sources[1].filters.withoutGenres = "27";
+	expected[0].folders[1].sources[0].filters.withoutGenres = "27";
+	expected[1].folders[0].sources[1].filters.withoutGenres = "27";
+	assert.deepEqual(serializeNuvioProject(after.project).value, expected);
+	assert.equal(after.project.collections[0].editable, a.editable);
+	assert.equal(after.project.collections[1].editable, b.editable);
+	assert.equal(after.project.collections[0].folders[0].sources[0], a.folders[0].sources[0]);
+	assert.equal(after.project.collections[1].folders[0].sources[0], b.folders[0].sources[0]);
+	assert.equal(result.changedTargets.length, 3);
+});
+
+test("Source-ID review rejects every non-issued capability without consuming the issued one", () => {
+	const s = multiSetup(), review = reviewFor(s), other = multiSetup(), otherReview = reviewFor(other);
+	const patched = structuredClone(review); patched.outcomes[0].patch.filters.withoutGenres = "35";
+	const retargeted = structuredClone(review); retargeted.sourceInternalIds = [s.collection.folders[1].sources[0].internalId];
+	for (const invalid of [null, undefined, 3, "review", {}, [], new Proxy(review, {}), { ...review },
+		structuredClone(review), JSON.parse(JSON.stringify(review)), patched, retargeted, otherReview,
+		planScopedGenreExclusions(s.opening.project, s.request)]) {
+		const result = assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(invalid));
+		assert.equal(result.ok, false);
+		assert.equal(result.errors[0].code, "INVALID_SCOPED_GENRE_REVIEW");
+	}
+	assert.equal(s.controller.applyScopedGenreExclusions(review).ok, true);
+	assert.equal(assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review)).ok, false);
+});
+
+test("invalid Source-ID requests publish neither a partial review nor diagnostics", () => {
+	const s = multiSetup(), valid = s.request;
+	for (const request of [
+		{ ...valid, scope: { nodeType: "folder", internalId: s.folder.internalId } },
+		{ ...valid, unknown: true }, { ...valid, sourceInternalIds: null },
+		{ ...valid, sourceInternalIds: Array(2) }, { ...valid, genreNames: Array(1) },
+		{ ...valid, sourceInternalIds: [valid.sourceInternalIds[0], "missing"] },
+		{ ...valid, sourceInternalIds: [valid.sourceInternalIds[0], s.folder.internalId] },
+	]) {
+		const result = assertNoPublication(s.controller, () => s.controller.reviewScopedGenreExclusions(request));
+		assert.equal(result.ok, false);
+		assert.equal(result.review, undefined);
+	}
+});
+
+for (const [label, change] of Object.entries(changes)) test("Source-ID review retains project-wide freshness for " + label, () => {
+	const s = multiSetup(), review = reviewFor(s);
+	assert.equal(change(s).ok, true);
+	const result = assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review));
+	assert.equal(result.ok, false);
+	assert.equal(result.errors[0].code, "STALE_SCOPED_GENRE_REVIEW");
+	assert.equal(assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review)).errors[0].code, "INVALID_SCOPED_GENRE_REVIEW");
+	if (label === "sourceAdd") {
+		const currentSources = s.controller.getState().project.collections[0].folders[0].sources;
+		const newSource = currentSources.at(-1);
+		assert.equal(review.sourceInternalIds.includes(newSource.internalId), false);
+		assert.equal(newSource.editable.filters?.withoutGenres, undefined);
+		const refreshed = reviewFor(s);
+		assert.equal(refreshed.sourceInternalIds.includes(newSource.internalId), false, "reusing explicit IDs never enrolls additions");
+	}
+});
+
+test("editing an unselected sibling invalidates the combined review", () => {
+	const s = multiSetup();
+	s.request.sourceInternalIds = [s.folder.sources[0].internalId];
+	const review = reviewFor(s);
+	assert.equal(s.controller.updateNode(s.folder.sources[1].internalId, { filters: { withoutGenres: "27" } }).ok, true);
+	const result = assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review));
+	assert.equal(result.errors[0].code, "STALE_SCOPED_GENRE_REVIEW");
+});
+
+test("new-form selection and diagnostic-only changes keep authority while retaining selection", () => {
+	const s = multiSetup(), review = reviewFor(s);
+	s.controller.selectNode(s.collection.folders[1].internalId);
+	s.controller.selectNode("missing");
+	const before = s.controller.getState();
+	assert.equal(before.project, s.opening.project);
+	assert.equal(s.controller.applyScopedGenreExclusions(review).ok, true);
+	assert.equal(s.controller.getState().selection, before.selection);
+});
+
+for (const mode of ["zero selected", "already excluded", "all skipped"]) for (const dirty of [false, true]) {
+	test("new-form no-op preserves complete clean/dirty state and consumes authority: " + mode + dirty, () => {
+		const s = multiSetup({ excluded: mode === "already excluded" ? "27" : mode === "all skipped" ? "27|35" : null });
+		if (mode === "zero selected") s.request.sourceInternalIds = [];
+		if (dirty) s.controller.updateNode(s.collection.internalId, { title: "Changed locally" });
+		s.controller.selectNode("missing");
+		const review = reviewFor(s);
+		assert.equal(review.totals.changed, 0);
+		assert.equal(review.totals.inspected, mode === "zero selected" ? 0 : 3);
+		if (mode === "zero selected") {
+			assert.deepEqual(review.outcomes, []);
+			assert.deepEqual(review.totals, { inspected: 0, changed: 0, unchanged: 0, skipped: 0 });
+		}
+		const result = assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review));
+		assert.equal(result.ok, true);
+		assert.deepEqual(result.changedTargets, []);
+		assert.equal(assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review)).ok, false);
+	});
+}
+
+test("unselected collision blockers remain immutable while a safe selected Source publishes once", () => {
+	const s = multiSetup({ count: 3 });
+	const imported = structuredClone(serializeNuvioProject(s.opening.project).value);
+	const first = imported[0].folders[0].sources[0];
+	// Unknown metadata participates in exact identity. The blocker must retain
+	// the same metadata as the candidate, not the setup helper's per-entity data.
+	imported[0].folders[0].sources[1] = { ...first, id: "raw-blocker", title: "Blocker",
+		filters: { ...first.filters, withoutGenres: "27" } };
+	assert.equal(s.controller.importValue(imported).ok, true);
+	s.folder = s.controller.getState().project.collections[0].folders[0];
+	s.request.sourceInternalIds = [s.folder.sources[0].internalId, s.folder.sources[2].internalId];
+	const before = s.controller.getState(), review = reviewFor(s), expected = structuredClone(serializeNuvioProject(before.project).value);
+	assert.deepEqual(review.totals, { inspected: 2, changed: 1, unchanged: 0, skipped: 1 });
+	assert.equal(review.outcomes[0].reason.code, "DUPLICATE_CONVERGENCE");
+	assert.ok(review.duplicateGroups[0].sourceInternalIds.includes(s.folder.sources[1].internalId));
+	assert.equal(review.sourceInternalIds.includes(s.folder.sources[1].internalId), false);
+	let publications = 0; s.controller.subscribe(() => { publications += 1; });
+	assert.equal(s.controller.applyScopedGenreExclusions(review).ok, true);
+	assert.equal(publications, 1);
+	const after = s.controller.getState();
+	assert.equal(after.revision, before.revision + 1);
+	expected[0].folders[0].sources[2].filters.withoutGenres = "27";
+	assert.deepEqual(serializeNuvioProject(after.project).value, expected);
+	for (const i of [0, 1]) assert.equal(after.project.collections[0].folders[0].sources[i], before.project.collections[0].folders[0].sources[i]);
+});
+
+for (const multi of [false, true]) test("complete rebuild compares non-patch review evidence for variant " + (multi ? "Source IDs" : "scope"), () => {
+	const s = multi ? multiSetup() : setup(), freeze = Object.freeze;
+	let review, injected = false;
+	try {
+		// Fault the detached row just before issuance is frozen. This tests the
+		// complete rebuilt comparison without an exposed production test hook.
+		Object.freeze = (value) => {
+			if (value?.sourceInternalId && Object.hasOwn(value, "afterExclusions")) {
+				value.sourceTitle = "Corrupted detached evidence"; injected = true;
+			}
+			return freeze(value);
+		};
+		review = reviewFor(s);
+	} finally { Object.freeze = freeze; }
+	assert.equal(injected, true);
+	const result = assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review));
+	assert.equal(result.errors[0].code, "INVALID_SCOPED_GENRE_REVIEW");
+	assert.equal(assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review)).ok, false);
+});
+
+test("new authority is consumed before subscriber reentry and invalidates competing reviews", () => {
+	const s = multiSetup(), review = reviewFor(s), otherReview = reviewFor(s);
+	let publications = 0, reentry;
+	s.controller.subscribe(() => { publications += 1; reentry = s.controller.applyScopedGenreExclusions(review); throw new Error("listener failure"); });
+	assert.equal(s.controller.applyScopedGenreExclusions(review).ok, true);
+	assert.equal(publications, 1);
+	assert.equal(reentry.ok, false);
+	assert.equal(assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(otherReview)).errors[0].code, "STALE_SCOPED_GENRE_REVIEW");
+	assert.equal(publications, 1);
+});
+
+test("new-form preparation failure leaves no partial project and consumes its authority", () => {
+	const s = multiSetup(), review = reviewFor(s), before = s.controller.getState(), freeze = Object.freeze;
+	let injected = false, result;
+	try {
+		Object.freeze = (value) => {
+			if (value?.nodeType === "project" && value !== before.project) { injected = true; throw new Error("publication preparation failed"); }
+			return freeze(value);
+		};
+		result = assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review));
+	} finally { Object.freeze = freeze; }
+	assert.equal(injected, true);
+	assert.equal(result.errors[0].code, "SCOPED_GENRE_APPLY_FAILED");
+	assert.equal(assertNoPublication(s.controller, () => s.controller.applyScopedGenreExclusions(review)).ok, false);
+});
+
+test("large partial selection publishes once without touching the unselected half", () => {
+	const s = multiSetup({ count: 2400 });
+	const chosen = s.folder.sources.filter((_, i) => i % 2 === 0);
+	s.request.sourceInternalIds = chosen.map((source) => source.internalId).reverse();
+	const before = s.controller.getState(), review = reviewFor(s);
+	assert.equal(review.totals.changed, 1200);
+	let publications = 0; s.controller.subscribe(() => { publications += 1; });
+	assert.equal(s.controller.applyScopedGenreExclusions(review).ok, true);
+	assert.equal(publications, 1);
+	assert.equal(s.controller.getState().revision, before.revision + 1);
+	s.controller.getState().project.collections[0].folders[0].sources.forEach((source, i) => {
+		if (i % 2) assert.equal(source, s.folder.sources[i]);
+		else assert.equal(source.editable.filters.withoutGenres, "27");
+	});
+});

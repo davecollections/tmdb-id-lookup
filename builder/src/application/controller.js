@@ -1134,7 +1134,9 @@ export function createBuilderController(options = {}) {
 		const review = deepFreeze(cloneJsonValue(plan));
 		scopedGenreReviews.set(review, {
 			project: state.project,
-			request: { scope: review.scope, genreNames: review.genreNames },
+			request: Object.hasOwn(review, "scope")
+				? { scope: review.scope, genreNames: review.genreNames }
+				: { sourceInternalIds: review.sourceInternalIds, genreNames: review.genreNames },
 		});
 		return actionResult(true, [], [], { review });
 	}

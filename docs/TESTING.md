@@ -2,7 +2,7 @@
 
 ## Scoped Genre exclusions foundation (#302)
 
-Stage 1 is pure planning/controller work only. Run:
+Stages 1 and 1B are pure planning/controller work only. Run:
 
 ```powershell
 node --test tests/builder-scoped-genre-exclusions.test.mjs tests/builder-scoped-genre-exclusions-controller.test.mjs
@@ -10,11 +10,17 @@ node --test tests/builder-scoped-genre-exclusions.test.mjs tests/builder-scoped-
 
 The suites cover supported/unsupported adapters and media, all official Genre mappings, malformed containers and expressions, unsafe/unknown filters and mirrors, whole-Source conflicts, no-ops, exact serialized preservation, edited overlays, same-Folder candidate convergence and final-set collision invariants. Duplicate details remain grouped even for 1,200 identical Sources. Other large local cases check bounded membership traversal and a 1,600-Source atomic batch with no cap.
 
+Stage 1B retains every original Stage 1 case and adds the strict `{ sourceInternalIds, genreNames }` alternative alongside unchanged legacy requests/reviews. Coverage includes dense arrays, mixed/unknown/missing keys, invalid or wrong-kind targets, globally ambiguous/malformed hierarchy, duplicate-ID normalization, canonical membership across Collections/Folders, zero-selected no-ops and compatibility-projection exclusion. Every selected Source has exactly one outcome; unselected siblings appear only as genuine collision blockers. Tests cover selected/selected and selected/unselected convergence, multiple blockers, cross-Folder independence, non-comparable siblings and pre-existing unchanged duplicates. All 875 nonempty selection/exclusion combinations in a three-Source matrix retain final collision invariants. A narrow pure unit executes the actual private collision routine with a synthetic identity graph to exercise restored-original cascades and one revocation per candidate; this is not external-service evidence.
+
+New-form serialization checks retain edited full-filter overlays, equivalent mirrors, exclusion order, unknown metadata and parent/unselected data. Scale cases select 1,200 of 2,400 physical Sources with bounded membership reads and one publication, and disclose 1,200 unselected blockers once without inflating selected totals.
+
 Controller cases cover deep freezing and controller-owned review identity; stale source/parent/scope edits, movement, insertion, deletion, import and reset; request mutation, clones, forged patches, proxies, cross-controller reviews and replay; selection-only changes; single publication, re-entrant subscribers, a fault during publication preparation, preserved diagnostics on no-op, and complete snapshot retention on failure. These fixtures are authored local project structures and pure contract data, not fabricated external-service responses.
+
+Both request variants rebuild from detached canonical authority. New cases mutate caller arrays, reject retargeted/serialized capabilities, apply one combined multi-Collection batch, reject stale unselected-sibling edits, retain selection/diagnostic-only validity, and prevent automatic enrollment of later Sources. Zero-selected, all-skipped and unchanged plans preserve clean/dirty snapshots and consume authority. Fault injection also changes detached non-patch evidence before issuance to prove that Apply compares the complete rebuilt review for both variants, not only proposed patches.
 
 Relevant existing regressions are Source Edit foundation/preview, controller/domain, presentation updates, import/merge/migration, collection preservation, compatibility corpus, serialization, family Advanced, Discover compatibility/core, native variants and source occurrence evidence. No mounted browser or visual acceptance is claimed by Stage 1. UI integration and actual phone/desktop owner review remain later gates.
 
-Both new suites are registered in the canonical `scripts/check-all.mjs` core inventory. Existing routing remains unchanged: controller/script changes require all four CI groups, and unclassified new paths fail broad. Registration does not narrow routing or change workflows. The focused pure regression run is appropriate at this foundation-only checkpoint; the complete mounted/full validation and owner visual acceptance belong to the later integration readiness gate.
+Both suites remain registered in the canonical `scripts/check-all.mjs` core inventory; Stage 1B adds cases without adding commands or changing inventory counts. Existing routing remains unchanged: controller/script changes require all four CI groups, and unclassified new paths fail broad. Focused pure and affected regression evidence answers the foundation's selection, identity, serialization and authority risks. Record the readiness decision on full local validation separately; do not repeat an unchanged full run merely at another gate. Hosted PR validation must retain normal broad routing. These foundation tests claim no UI, mounted/live-service or physical-phone acceptance; those remain later integration gates.
 
 
 ## Collection Follow Home Layout (#296)

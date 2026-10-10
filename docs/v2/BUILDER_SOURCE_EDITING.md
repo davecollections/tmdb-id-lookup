@@ -2,11 +2,11 @@
 
 ## Scoped Genre exclusions foundation (#302)
 
-[Issue #302](https://github.com/davecollections/tmdb-id-lookup/issues/302) adds a one-time additive operation over the existing physical Sources in one explicitly selected Collection or Folder. Stage 1 supplies pure planning and controller APIs only; it exposes no UI and does not change ordinary Source Edit, Global display settings, export, or persistent parent settings. The full issue remains open until UI integration and owner acceptance are complete.
+[Issue #302](https://github.com/davecollections/tmdb-id-lookup/issues/302) adds a one-time additive operation over existing physical Sources. The original Collection/Folder scope remains supported; Stage 1B also accepts an explicit set of Source IDs across Collections and Folders. These foundation stages supply pure planning and controller APIs only; they expose no UI and do not change ordinary Source Edit, Global display settings, export, or persistent parent settings. Newly added Sources inherit no rule. The full issue remains open until UI integration and owner acceptance are complete.
 
 ### API and review authority
 
-`planScopedGenreExclusions(project, request)` in `builder/src/source-edit/scoped-genre-exclusions.js` is a pure planner. It accepts exactly:
+`planScopedGenreExclusions(project, request)` in `builder/src/source-edit/scoped-genre-exclusions.js` is a pure planner. It accepts exactly one of two request variants. The legacy request is unchanged:
 
 ```js
 {
@@ -15,11 +15,26 @@
 }
 ```
 
-Scope is mandatory and identity-based; no workspace selection or name supplies a default. Genre names must be unique official catalogue concepts. The planner orders proposed additions by the existing catalogue, inspects physical Sources in saved order and returns `totals`, ordered `outcomes` and shared `duplicateGroups`. Each outcome records exact parent/Source IDs and positions, adapter/media, applicable/inapplicable/conflicting Genres, before/after exclusions, reason, comparison identities and a minimal editable patch for a changed Source. Changed + unchanged + skipped equals the inspected physical Source count. A duplicate outcome references a group ID; member IDs are stored once per group rather than expanded on every row. Legacy compatibility projections are not additional physical Sources.
+The multi-target request uses physical Source identities directly:
 
-`controller.reviewScopedGenreExclusions(request)` returns an ordinary action result with `review` on success, without publishing state. The review is detached and deeply frozen. A private per-controller WeakMap binds the exact review object to the opening immutable project and request; the pure planner output is not mutation authority.
+```js
+{
+  sourceInternalIds: [firstSourceInternalId, secondSourceInternalId],
+  genreNames: ["Comedy", "Horror"]
+}
+```
 
-`controller.applyScopedGenreExclusions(review)` accepts only that controller's issued object. Cloned, forged, proxied and cross-controller objects are rejected. Every recognized Apply attempt consumes its review, including no-op or failed attempts. Apply requires the same project object, rebuilds the entire plan, and compares all bindings, outcomes, identities and patches before mutation. Content changes anywhere invalidate the review; selection or diagnostics alone do not. There is no arbitrary patch input or automatic acceptance of a newly changed subset.
+The union is strict: mixed targeting forms, extra or missing keys, malformed scope/arrays, sparse arrays and non-string or empty IDs are invalid. Every supplied Source ID must resolve to an existing physical Source; missing targets and Collection/Folder IDs fail the request rather than being discarded. The complete project hierarchy must have valid, globally unambiguous internal identities before planning starts. Repeated valid Source IDs normalize to one membership in current Collection → Folder → Source traversal order, never click order. No workspace selection or name supplies a default.
+
+Genre names remain unique official catalogue concepts. The planner orders proposed additions by the existing catalogue and returns `totals`, ordered `outcomes` and shared `duplicateGroups`. Legacy reviews retain `scope` and their existing shape/order; new reviews contain canonical `sourceInternalIds` and no `scope`. Each selected Source has exactly one outcome, including unsupported or opaque Sources. Unselected Sources never become outcomes. For the new form, `sourceInternalIds.length === outcomes.length === totals.inspected === totals.changed + totals.unchanged + totals.skipped`.
+
+Each outcome records exact parent/Source IDs and positions, adapter/media, applicable/inapplicable/conflicting Genres, before/after exclusions, reason, comparison identities and a minimal editable patch for a changed Source. A duplicate outcome references a group ID; member IDs are stored once per group rather than expanded on every row. Duplicate evidence can include unselected sibling blockers; membership in the new review's `sourceInternalIds` distinguishes them. Legacy compatibility projections are not additional physical Sources.
+
+An empty `sourceInternalIds` array is a valid zero-outcome review with zero totals. Apply consumes its authority without publication or dirty/revision changes. Empty Collection/Folder selection markers are UI-only state and are not accepted by this foundation. The later UI must disable Continue when zero physical Sources are selected, even if empty branches are marked.
+
+`controller.reviewScopedGenreExclusions(request)` returns an ordinary action result with `review` on success, without publishing state. The review is detached and deeply frozen. A private per-controller WeakMap binds the exact review object to the opening immutable project and the canonical request variant: `{ scope, genreNames }` or `{ sourceInternalIds, genreNames }`. Authority uses detached frozen review values, never caller-owned mutable arrays; later caller edits cannot retarget Apply. The pure planner output is not mutation authority.
+
+`controller.applyScopedGenreExclusions(review)` accepts only that controller's issued object. Cloned, forged, proxied and cross-controller objects are rejected. Every recognized Apply attempt consumes its review, including no-op or failed attempts. Apply requires the same project object, rebuilds the entire combined plan from the correct private request variant, and compares all bindings, outcomes, identities and patches before mutation. Project-wide freshness deliberately includes unselected sibling edits, membership/order/movement changes and other project edits; selection or diagnostics alone do not invalidate unchanged content. There is no arbitrary patch input, automatic enrollment of new Sources, or acceptance of a newly changed subset.
 
 A successful nonempty batch uses the existing `updateEditableValuesMany` once and `commitProjectEdit` once, retaining current selection. Errors are returned without publishing diagnostics. Failure and no-op preserve the entire current state snapshot, including project, revision, dirty state and subscribers. No new Undo or automatic Export/Send is implied.
 
@@ -35,7 +50,7 @@ Applicable missing IDs are appended to the existing comma-token order. Media-spe
 
 Patches reuse `patchTouchedDiscoverFilters` with only `withoutGenres` touched and narrowly owned equivalent mirrors. They retain the full current editable filters map because `updateEditableValuesMany` merges editable values shallowly; a partial filters map would erase other recognized filters. Existing Sources are not reconstructed from creation drafts. Adapter validation checks detached candidates; only the touched-field patch is published. Raw imports, unknown metadata, non-owned filters and their types, source/parent identities, titles, ordering and presentation survive. Actual serialization comparisons, including previously edited overlays, verify this boundary.
 
-Duplicate comparison reuses the existing family keys, including literal exclusion order. Every Folder's final candidate set is checked against changed and unchanged siblings. All changed members of a collision group are skipped; restoring originals queues affected groups for another check. Existing unchanged duplicates remain, and other Folders do not block the operation. The planner uses the shared project-source snapshot and grouped identities rather than repeated per-Source project scans. There is no Source cap.
+Duplicate comparison reuses the existing family keys, including literal exclusion order. Every affected Folder's final identity universe contains all physical siblings: selected changed Sources use proposed identities, other selected Sources use originals, and unselected siblings contribute immutable original-identity blockers only. Unselected siblings are never mutation candidates, outcome rows or selected totals. Non-comparable identities remain unknown and untouched, not guessed distinct. All changed selected members of a collision group are skipped, without an arbitrary winner; restoring originals queues affected groups for another check and each changed row can be revoked at most once. Existing unchanged duplicates remain, and other Folders do not block the operation. The planner uses the shared project-source snapshot and grouped identities rather than repeated per-Source project scans. There is no Source cap.
 
 ### Contract evidence and limits
 

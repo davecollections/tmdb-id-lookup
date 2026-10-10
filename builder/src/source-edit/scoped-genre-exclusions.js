@@ -19,6 +19,14 @@ function exactKeys(value, keys) {
 	return isPlainObject(value) && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 }
 
+function denseStringArray(value) {
+	if (!Array.isArray(value)) return false;
+	for (let index = 0; index < value.length; index += 1) {
+		if (!Object.hasOwn(value, index) || typeof value[index] !== "string" || !value[index]) return false;
+	}
+	return true;
+}
+
 // Comparison stays family-owned, including excluded-token order and preserved extras.
 // All DISCOVER editors share the same comparison authority, including skipped siblings.
 function duplicateKey(source) {
@@ -169,52 +177,74 @@ function resolveFolderCollisions(rows, duplicateGroups) {
 /**
  * Pure, detached planning only. Does not authorize mutation.
  * request = { scope: { nodeType: "collection" | "folder", internalId }, genreNames: string[] }
+ *        or { sourceInternalIds: string[], genreNames: string[] }
  * Source order and exact membership are recorded even for skipped/no-op rows.
  */
 export function planScopedGenreExclusions(project, request) {
 	try {
-		if (!exactKeys(request, ["scope", "genreNames"]) || !exactKeys(request.scope, ["nodeType", "internalId"])
-			|| !["collection", "folder"].includes(request.scope.nodeType)
-			|| typeof request.scope.internalId !== "string" || !request.scope.internalId
-			|| !Array.isArray(request.genreNames) || !request.genreNames.length
+		const legacy = exactKeys(request, ["scope", "genreNames"]);
+		const multiple = exactKeys(request, ["sourceInternalIds", "genreNames"]);
+		if ((!legacy && !multiple)
+			|| (legacy && (!exactKeys(request.scope, ["nodeType", "internalId"])
+				|| !["collection", "folder"].includes(request.scope.nodeType)
+				|| typeof request.scope.internalId !== "string" || !request.scope.internalId))
+			|| (multiple && !denseStringArray(request.sourceInternalIds))
+			|| !denseStringArray(request.genreNames) || !request.genreNames.length
 			|| new Set(request.genreNames).size !== request.genreNames.length
 			|| [...request.genreNames].some((name) => typeof name !== "string" || !officialGenreConcept(name))) {
-			return failure("INVALID_SCOPED_GENRE_REQUEST", "Choose one Collection or Folder and unique official Genre names.");
+			return failure("INVALID_SCOPED_GENRE_REQUEST", multiple
+				? "Choose physical Source IDs and unique official Genre names."
+				: "Choose one Collection or Folder and unique official Genre names.");
 		}
 		if (project?.nodeType !== "project" || !Array.isArray(project.collections)) return failure("INVALID_SCOPED_GENRE_PROJECT", "The project is unavailable.");
 		const ids = new Set();
-		function unique(node) {
-			if (typeof node.internalId !== "string" || !node.internalId || ids.has(node.internalId)) throw new Error("Ambiguous internal identity");
+		function unique(node, nodeType) {
+			if (node.nodeType !== nodeType || typeof node.internalId !== "string" || !node.internalId || ids.has(node.internalId)) throw new Error("Ambiguous internal identity");
 			ids.add(node.internalId);
 		}
-		unique(project);
+		unique(project, "project");
 		let scope = null;
 		for (const collection of project.collections) {
-			unique(collection);
-			if (request.scope.nodeType === "collection" && collection.internalId === request.scope.internalId) scope = collection;
+			unique(collection, "collection");
+			if (!Array.isArray(collection.folders)) throw new Error("Invalid Collection membership");
+			if (legacy && request.scope.nodeType === "collection" && collection.internalId === request.scope.internalId) scope = collection;
 			for (const folder of collection.folders) {
-				unique(folder);
-				if (request.scope.nodeType === "folder" && folder.internalId === request.scope.internalId) scope = folder;
+				unique(folder, "folder");
+				if (!Array.isArray(folder.sources)) throw new Error("Invalid Folder membership");
+				if (legacy && request.scope.nodeType === "folder" && folder.internalId === request.scope.internalId) scope = folder;
 			}
 		}
 		const snapshot = projectSourceSnapshot(project);
-		for (const { source } of snapshot.occurrences) unique(source);
-		if (!scope || scope.nodeType !== request.scope.nodeType) return failure("SCOPED_GENRE_SCOPE_MISSING", "The selected Collection or Folder is no longer available.");
+		for (const { source } of snapshot.occurrences) unique(source, "source");
+		if (legacy && !scope) return failure("SCOPED_GENRE_SCOPE_MISSING", "The selected Collection or Folder is no longer available.");
+		const requestedIds = multiple ? new Set(request.sourceInternalIds) : null;
+		const occurrences = snapshot.occurrences.filter((entry) => multiple ? requestedIds.has(entry.source.internalId)
+			: request.scope.nodeType === "collection" ? entry.collection.internalId === scope.internalId : entry.folder.internalId === scope.internalId);
+		if (multiple && occurrences.length !== requestedIds.size) {
+			return failure("SCOPED_GENRE_SOURCE_MISSING", "Every selected ID must identify an existing physical Source. Nothing was reviewed.");
+		}
 		const selected = new Set(request.genreNames);
 		const concepts = GENRE_CONCEPTS.filter((concept) => selected.has(concept.name));
-		const occurrences = snapshot.occurrences.filter((entry) => request.scope.nodeType === "collection"
-			? entry.collection.internalId === scope.internalId : entry.folder.internalId === scope.internalId);
 		const outcomes = occurrences.map((entry) => planSource(entry, concepts));
+		const selectedRows = new Map(outcomes.map((row) => [row.sourceInternalId, row]));
 		const folders = new Map();
 		for (const row of outcomes) {
 			if (!folders.has(row.folderInternalId)) folders.set(row.folderInternalId, []);
-			folders.get(row.folderInternalId).push(row);
+		}
+		// Include every physical sibling in each affected Folder. Identity-only
+		// blockers cannot become changed candidates and never enter public outcomes.
+		for (const { folder, source } of snapshot.occurrences) {
+			if (!folders.has(folder.internalId)) continue;
+			folders.get(folder.internalId).push(selectedRows.get(source.internalId) ?? Object.freeze({
+				sourceInternalId: source.internalId, originalIdentity: duplicateKey(source),
+			}));
 		}
 		const duplicateGroups = [];
 		for (const rows of folders.values()) resolveFolderCollisions(rows, duplicateGroups);
 		const totals = { inspected: outcomes.length, changed: 0, unchanged: 0, skipped: 0 };
 		for (const row of outcomes) totals[row.status] += 1;
-		return { ok: true, errors: [], scope: { ...request.scope }, genreNames: concepts.map((concept) => concept.name), totals, outcomes, duplicateGroups };
+		const target = legacy ? { scope: { ...request.scope } } : { sourceInternalIds: outcomes.map((row) => row.sourceInternalId) };
+		return { ok: true, errors: [], ...target, genreNames: concepts.map((concept) => concept.name), totals, outcomes, duplicateGroups };
 	} catch {
 		return failure("INVALID_SCOPED_GENRE_PROJECT", "The complete scope could not be reviewed safely. Nothing was changed.");
 	}
