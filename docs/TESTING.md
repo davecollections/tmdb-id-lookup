@@ -1,5 +1,35 @@
 # Repository Testing
 
+## Scoped Genre exclusions UI (#302)
+
+Stage 2 uses the merged Stage 1B Source-ID APIs in the mounted Builder workspace with authored local Collection/Folder/Source data. Run the focused pure/UI tests and existing Workspace browser runner:
+
+```powershell
+node --test tests/builder-bulk-edit.test.mjs tests/builder-scoped-genre-exclusion-ui.test.mjs tests/builder-scoped-genre-exclusions.test.mjs tests/builder-scoped-genre-exclusions-controller.test.mjs
+$env:SCOPED_GENRE_ONLY = '1'
+node --test --test-name-pattern='mounted scoped Genre' tests/builder-bulk-edit-mounted.test.mjs
+Remove-Item Env:SCOPED_GENRE_ONLY
+```
+
+The same scenario is part of ordinary full Workspace validation. The pure UI suite is registered beside the existing Bulk Edit command, retaining the inventory's command count and all existing routing. No workflow or planner-routing changes accompany it. The optional `SCOPED_GENRE_SCREENSHOT_DIR` writes implemented screenshots and measurements outside Git.
+
+For a presentation-only refinement with unchanged foundation, use the bounded pure/UI command below plus the focused mounted command and Builder build; do not repeat the canonical full suite merely because presentation changed. Existing canonical evidence remains applicable unless focused checks expose a substantive wider regression.
+
+```powershell
+node --test tests/builder-bulk-edit.test.mjs tests/builder-scoped-genre-exclusion-ui.test.mjs
+npm.cmd run build --prefix builder
+```
+
+Pure tests cover physical Source membership, overlapping parent/child selections, subtraction and mixed/reselect/clear transitions, empty terminal leaves, search-independent branch/Select-all membership, duplicate/fallback/verbatim labels, missing target IDs, supporting unselected blockers and a 3,600-Source index without a cap. Mounted cases verify initial collapse, native checked/indeterminate state, Back and search retention, transient search reveal and explicit collapse, empty-only disabled Continue, all physical Sources plus an unselected empty branch, project-wide Clear preserving Genres, and 125-Source lazy rendering with focus retained through batches/collapse.
+
+The real controller receives one combined request across Collections, excluding UI-only empty markers. Review checks exact selected versus changed counts, opaque/unsupported Sources, TV Horror inapplicability, included-Genre conflicts, selected/unselected convergence, collapsed Collection summaries with exact status totals, exception-first Folder reports, skipped/unchanged reasons immediately visible, and count-only routine summaries with optional Existing/After audit rows, and no blocker/empty fake outcomes. Apply checks exact serialization, byte-identical unselected data, one atomic publication, double activation, no-op, stale review after additions/removals, retained IDs and deliberate parent reselection. Existing Display fields/confirmation, both dirty-draft decisions, authenticated review identity, failure/throw recovery, header Back/Close, primary-only footer, Done and browser history remain covered.
+
+The visual matrix covers Display, Source management, guard, collapsed/expanded/search targets, Genres, collapsed/expanded Review and inline evidence, success and stale error at 360/384/393/402/412/899/900/901/1280px, short phone/desktop heights, 200% text, forced colours and reduced motion. Additional phone/desktop cases cover single/multiple skipped, mixed zero-change, large reviews, routine-only Folders and large exception lists, with enlarged long names at six widths and nine simulated Visual Viewport geometries. Real keys verify checkbox Space, disclosure Enter/Space, Tab/Shift-Tab, visible focus, exact Display/title-confirmation targets and clipped-focus stability. The browser accessibility tree must expose the native mixed checkbox; disclosure geometry, names and controlled regions are inspected. Joined cards retain separate sibling checkbox/disclosure controls and down/up chevrons. Measured Source targets remain at least 44px and materially shorter than Collections without shrinking text. Collection is the main hierarchy disclosure: its collapsed contents stay unmounted and Folders are report headings. Status groups reconcile to authenticated outcomes and retain saved Source order within skipped/unchanged/changed groups. Routine changed rows stay unmounted until the accessible Show N changing Sources button is activated; Hide removes them. Changed audits show inline Existing/After without repeated change prose. Independent skipped, unchanged and opened changed lists are each exercised through 50/100/125 rows with exact focus; routine-only and exception-only Folders remain truthful. Header Back/Close order on Steps 1–3, success without Back, Close/Done keyboard order, primary-only footer, real Collection/audit Enter/Space and the success heading focus treatment are checked. One active dialog, body lock, intended content scroll owner and reachable actions are retained.
+
+This static operation must make zero external requests. Authored local projects do not replace external-service evidence; existing live integration regressions use the approved production path. Browser emulation does not replace owner or physical-phone acceptance.
+
+At readiness, assess whether one canonical `node scripts/check-all.mjs` run adds regression evidence for Workspace/Bulk Edit/CSS changes. Do not repeat an unchanged full run. Build with `npm run build --prefix builder` and run Git diff hygiene. Record failures and bounded resolutions, and report unavailable live services without fabricating responses.
+
 ## Scoped Genre exclusions foundation (#302)
 
 Stages 1 and 1B are pure planning/controller work only. Run:
