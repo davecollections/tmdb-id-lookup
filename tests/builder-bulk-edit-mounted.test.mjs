@@ -53,7 +53,7 @@ const presentationOnly = process.env.BUILDER_MANAGEMENT_PRESENTATION_ONLY === "1
 const ownerCollectionImport = process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH
 	? JSON.parse(fs.readFileSync(process.env.COLLECTION_FOLDERS_OWNER_IMPORT_PATH, "utf8")) : null;
 const tmdbProxyBaseUrl = extractTmdbProxyBaseUrl(fs.readFileSync(path.join(rootDir, "js", "config.js"), "utf8"));
-const expectedConfirmation = "This will replace the current titles. Make sure youâ€™re happy to lose those names before continuing, as this action cannot be undone.";
+const expectedConfirmation = "This will replace the current titles. Make sure you’re happy to lose those names before continuing, as this action cannot be undone.";
 
 function chromeExecutable() {
 	const candidates = [
