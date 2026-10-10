@@ -4546,7 +4546,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8176,喜番,0,,,,https://www.themoviedb.org/network/8176
 8177,WNPT,1,"Nashville, Tennessee, United States of America",US,,https://www.themoviedb.org/network/8177
 8178,BET Africa,2,,ZA,,https://www.themoviedb.org/network/8178
-8179,哔哩哔哩,3,,,,https://www.themoviedb.org/network/8179
 8180,Discovery Science,1,"İstanbul, Türkiye",TR,,https://www.themoviedb.org/network/8180
 8181,Passion TV,0,,,,https://www.themoviedb.org/network/8181
 8184,NPO 1 extra,1,,,,https://www.themoviedb.org/network/8184
@@ -5659,3 +5658,5 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9559,Dreams Reset Studio,1,,BR,,https://www.themoviedb.org/network/9559
 9560,Ian Channel (US),1,,,,https://www.themoviedb.org/network/9560
 9561,Ideh Nama,1,,,,https://www.themoviedb.org/network/9561
+9562,Discovery,1,,IN,,https://www.themoviedb.org/network/9562
+9563,Meta,1,"Menlo Park, California, USA",US,http://meta.com,https://www.themoviedb.org/network/9563
