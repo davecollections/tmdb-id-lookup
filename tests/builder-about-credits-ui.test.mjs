@@ -132,7 +132,8 @@ test("About & Credits reuses the established portal, body lock, focus trap, Esca
 	assert.match(dialog, /lockAddSourceDocumentBody\(\)/);
 	assert.match(dialog, /observeAddSourceViewport\(setViewportStyle\)/);
 	assert.match(dialog, /focusElementWithoutScroll\(closeButtonRef\.current \?\? dialogRef\.current\)/);
-	assert.match(dialog, /handleDialogKeyDown\(event, dialogRef\.current, onClose\)/);
+	assert.match(dialog, /handleDialogKeyDown\(event\.target\.tagName === "H2"/);
+	assert.match(dialog, /dialogRef\.current, onClose, \{ includeControl:/);
 	assert.match(dialog, /aria-label="Close About & Credits"[\s\S]*onClick=\{onClose\}/);
 	assert.match(workspace, /onClick=\{openAboutCredits\}/);
 	assert.match(workspace, /setAboutCreditsOpen\(false\)[\s\S]*setRestoreAboutCreditsFocus\(true\)/);

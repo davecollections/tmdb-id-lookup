@@ -9,12 +9,17 @@ import {
 } from "./add-source-modal-lifecycle.js";
 import { focusElementWithoutScroll } from "./hierarchy-menu-placement.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
+import { NuvioImportGuide, NuvioImportGuideEntry } from "./NuvioImportGuide.jsx";
 
 const usePrePaintLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function AboutCreditsDialog({ onClose }) {
 	const dialogRef = useRef(null);
 	const closeButtonRef = useRef(null);
+	const scrollRef = useRef(null);
+	const guideEntryRef = useRef(null);
+	const guideReturn = useRef(null);
+	const [guideOpen, setGuideOpen] = useState(false);
 	const [viewportStyle, setViewportStyle] = useState(() => (
 		typeof window === "undefined" ? null : resolveAddSourceViewportStyle(window)
 	));
@@ -28,6 +33,17 @@ export function AboutCreditsDialog({ onClose }) {
 			unlockBody();
 		};
 	}, []);
+
+	usePrePaintLayoutEffect(() => {
+		if (guideOpen || !guideReturn.current) return;
+		scrollRef.current.scrollTop = guideReturn.current.top;
+		guideReturn.current = null;
+		focusElementWithoutScroll(guideEntryRef.current);
+	}, [guideOpen]);
+	function enterGuide() {
+		guideReturn.current = { top: scrollRef.current.scrollTop };
+		setGuideOpen(true);
+	}
 
 	const content = (
 		<div className="about-credits-portal" data-about-credits-portal="true">
@@ -45,14 +61,15 @@ export function AboutCreditsDialog({ onClose }) {
 			>
 				<section
 					ref={dialogRef}
-					className="about-credits-dialog"
+					className={"about-credits-dialog" + (guideOpen ? " is-import-guide" : "")}
 					data-about-credits-dialog="true"
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="about-credits-title"
 					tabIndex={-1}
-					onKeyDown={(event) => handleDialogKeyDown(event, dialogRef.current, onClose)}
+					onKeyDown={(event) => handleDialogKeyDown(event.target.tagName === "H2" ? { key: event.key, shiftKey: event.shiftKey, target: dialogRef.current, preventDefault: () => event.preventDefault() } : event, dialogRef.current, onClose, { includeControl: (element) => element.getClientRects().length > 0 })}
 				>
+					{guideOpen ? <NuvioImportGuide titleId="about-credits-title" hostTitle="About & Credits" onBack={() => setGuideOpen(false)} onClose={onClose} /> : <>
 					<header className="about-credits-heading">
 						<h2 id="about-credits-title">About &amp; Credits</h2>
 						<button
@@ -65,7 +82,8 @@ export function AboutCreditsDialog({ onClose }) {
 							Close
 						</button>
 					</header>
-					<div className="about-credits-content">
+					<div className="about-credits-content" ref={scrollRef}>
+						<NuvioImportGuideEntry ref={guideEntryRef} onClick={enterGuide} />
 						<section className="about-credits-attributions" aria-label="Data credits">
 							<div className="about-credit-row">
 								<a
@@ -155,6 +173,7 @@ export function AboutCreditsDialog({ onClose }) {
 							</p>
 						</footer>
 					</div>
+					</>}
 				</section>
 			</div>
 		</div>
