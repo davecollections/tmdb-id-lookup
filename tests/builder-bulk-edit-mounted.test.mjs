@@ -1,3 +1,4 @@
+import { runScopedGenreExclusionChecks } from "./helpers/scoped-genre-exclusions-mounted.mjs";
 import { runCollectionLayoutChecks } from "./helpers/collection-layout-mounted.mjs";
 import { runHierarchyOrderingChecks } from "./helpers/hierarchy-ordering-mounted.mjs";
 import { runMoveFoldersChecks } from "./helpers/move-folders-mounted.mjs";
@@ -32,6 +33,8 @@ import {
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const builderModules = path.join(rootDir, "builder", "node_modules");
+const scopedGenresOnly = process.env.SCOPED_GENRE_ONLY === "1";
+let scopedGenresMounted;
 const hierarchyOrderingOnly = process.env.BUILDER_ORDERING_ONLY === "1";
 let hierarchyOrderingMounted;
 const moveFoldersOnly = process.env.BUILDER_MOVE_ONLY === "1";
@@ -357,6 +360,7 @@ async function runMountedPage() {
 		if (!projectFindOnly && !nuvioSendOnly && !nuvioImportOnly && !collectionCorrectionOnly && !presentationOnly && !backToTopOnly) optimizeDeps.entries.push("tests/fixtures/builder-nuvio-send-mounted.html");
 		if (!projectFindOnly) optimizeDeps.entries.push("tests/fixtures/builder-find-mounted.html");
 		optimizeDeps.entries.push("tests/fixtures/builder-move-folders-mounted.html");
+		optimizeDeps.entries.push("tests/fixtures/builder-scoped-genre-exclusions-mounted.html");
 		optimizeDeps.include.push("react/jsx-dev-runtime");
 		optimizeDeps.needsInterop.push("react/jsx-dev-runtime");
 		resources.viteCacheDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-bulk-edit-vite-"));
@@ -430,8 +434,9 @@ async function runMountedPage() {
 		const fixtureErrors = [];
 		const externalRequests = [];
 		let checkingCollectionLayout = false;
+		let checkingScopedGenres = false;
 		resources.pageConnection.onEvent(({ method, params }) => {
-			if ((nuvioWelcomeOnly || checkingCollectionLayout) && method === "Network.requestWillBeSent" && /^https?:/.test(params.request.url) && new URL(params.request.url).hostname !== "127.0.0.1") externalRequests.push(params.request.url);
+			if ((nuvioWelcomeOnly || checkingCollectionLayout || checkingScopedGenres) && method === "Network.requestWillBeSent" && /^https?:/.test(params.request.url) && new URL(params.request.url).hostname !== "127.0.0.1") externalRequests.push(params.request.url);
 			if (method === "Runtime.exceptionThrown") fixtureErrors.push(params.exceptionDetails.exception?.description ?? params.exceptionDetails.text);
 			if (method === "Network.loadingFailed") fixtureErrors.push(params.errorText);
 			if (method === "Network.responseReceived" && params.response.status >= 400) fixtureErrors.push(`${params.response.status} ${params.response.url}`);
@@ -449,6 +454,13 @@ async function runMountedPage() {
 			}
 		` });
 		const address = resources.vite.httpServer.address();
+		if (scopedGenresOnly || !(followLayoutOnly || hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || workspaceImportOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly)) {
+			timing.stage("Scoped Genre exclusions"); checkingScopedGenres = true;
+			scopedGenresMounted = await runScopedGenreExclusionChecks(resources.pageConnection, "http://127.0.0.1:" + address.port, evaluate);
+			checkingScopedGenres = false;
+			assert.deepEqual(externalRequests, [], "Scoped Genre operation makes zero external requests");
+			if (scopedGenresOnly) return { scopedGenres: scopedGenresMounted };
+		}
   let followLayout = null;
   if (followLayoutOnly || !(hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || workspaceImportOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly)) {
    timing.stage("Follow Home Layout scenarios");
@@ -771,7 +783,7 @@ test(welcomeHandoffOnly ? "mounted Welcome direct import handoff keeps diagnosti
 	assert.deepEqual(mounted.nuvioImport.errors, []);
 });
 
-test("Sort folders stays compact on phones and Global display settings retains accessible operation", { skip: followLayoutOnly || hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || nuvioSendOnly || backToTopOnly }, () => {
+test("Sort folders stays compact on phones and Global settings retains accessible operation", { skip: followLayoutOnly || hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || nuvioSendOnly || backToTopOnly }, () => {
 	assert.equal(mounted.presentation.layouts.length, 12);
 	assert.ok(mounted.presentation.layouts.every((layout) => layout.modalWidth <= 460 && layout.footer));
 	assert.deepEqual(mounted.presentation.terminology.map(({ width }) => width), [393, 1280]);
@@ -822,7 +834,7 @@ unrelatedTest("mounted combined Apply confirms once, preserves the draft on Canc
 	assert.equal(combined.initial.headingFocused, true);
 	assert.equal(combined.initial.bodyLocked, true);
 	assert.deepEqual(combined.footerOrder, ["apply-bulk-edit", "cancel-bulk-edit"]);
-	assert.equal(combined.tabWrappedToFirst, true);
+	assert.deepEqual(scopedGenresMounted.exactKeyboard.map(({ width, displayForward, displayBackward }) => ({ width, displayForward, displayBackward })), [393, 1280].map((width) => ({ width, displayForward: "global-settings-display-tab", displayBackward: "cancel-bulk-edit" })), "Real Tab and Shift-Tab wrap to exact current Display controls");
 	assert.deepEqual(combined.confirmationState, {
 		present: true,
 		bulkDialogAbsent: true,
@@ -906,7 +918,7 @@ unrelatedTest("mounted pill radios support keyboard navigation with an explicit 
 	});
 });
 
-unrelatedTest("mounted Global display settings stays labelled, single-scroll, wrapped, reachable, and overflow-free at every required width", () => {
+unrelatedTest("mounted Global settings stays labelled, single-scroll, wrapped, reachable, and overflow-free at every required width", () => {
 	assert.deepEqual(mounted.layouts.map(({ width }) => width), [360, 384, 393, 402, 412, 899, 900, 901, 1280]);
 	for (const layout of mounted.layouts) {
 		assert.equal(layout.documentOverflow, false, `document overflow at ${layout.width}px`);
@@ -923,8 +935,8 @@ unrelatedTest("mounted Global display settings stays labelled, single-scroll, wr
 		assert.equal(layout.triggerSurfaceWidth, 34);
 		assert.equal(layout.triggerSurfaceHeight, 34);
 		assert.equal(layout.triggerHasPopup, "dialog");
-		assert.equal(layout.triggerLabel, "Global display settings");
-		assert.equal(layout.triggerTitle, "Global display settings");
+		assert.equal(layout.triggerLabel, "Global settings");
+		assert.equal(layout.triggerTitle, "Global settings");
 		assert.equal(layout.triggerInCollectionsHeader, true);
 		assert.equal(layout.triggerInFoldersHeader, false);
 		assert.equal(layout.triggerInMasthead, false);
@@ -1038,4 +1050,15 @@ test("mounted Follow Home Layout preserves settings with responsive accessible c
  assert.equal(mounted.followLayout.layouts.length, 57);
  assert.equal(mounted.followLayout.localPeople.length, 7);
  assert.deepEqual(mounted.followLayout.errors, []);
+});
+
+
+test("mounted scoped Genre exclusions preserve Display, authenticated atomic multi-target review and accessible responsive navigation", { skip: !scopedGenresOnly && (followLayoutOnly || hierarchyOrderingOnly || moveFoldersOnly || projectFindOnly || workspaceImportOnly || nuvioSendOnly || nuvioImportOnly || collectionCorrectionOnly || presentationOnly || backToTopOnly) }, () => {
+	assert.equal(scopedGenresMounted.local.passed, true);
+	assert.equal(scopedGenresMounted.layouts.length, 204);
+	assert.equal(scopedGenresMounted.keyboard.length, 9);
+	assert.equal(scopedGenresMounted.extraReviews.length, 28);
+	assert.equal(scopedGenresMounted.exactKeyboard.length, 2);
+	assert.deepEqual(scopedGenresMounted.errors, []);
+	console.log("Scoped Genre exclusions:", scopedGenresMounted.layouts.length, "surfaces; 9 Visual Viewport cases; zero external requests.");
 });

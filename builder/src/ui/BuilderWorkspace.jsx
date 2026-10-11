@@ -57,7 +57,6 @@ import { AboutCreditsDialog } from "./AboutCreditsDialog.jsx";
 import { AddSourceDialog } from "./AddSourceDialog.jsx";
 import {
 	BulkEditDialog,
-	BulkEditTitleConfirmation,
 } from "./BulkEditDialog.jsx";
 import {
 	buildBulkEditPlan,
@@ -2767,8 +2766,8 @@ export function BuilderWorkspace({
 									className="presentation-settings-trigger"
 									type="button"
 									data-action="open-bulk-edit"
-									aria-label="Global display settings"
-									title="Global display settings"
+									aria-label="Global settings"
+									title="Global settings"
 									aria-haspopup="dialog"
 									disabled={hierarchyInteractionLocked || !currentBulkEditAvailability.hasCollections}
 									onClick={openBulkEdit}
@@ -2999,8 +2998,14 @@ export function BuilderWorkspace({
 			</div>
 
 			{aboutCreditsOpen ? <AboutCreditsDialog onClose={closeAboutCredits} /> : null}
-			{bulkEditDraft && bulkEditConfirmation === null ? (
+			{bulkEditDraft ? (
 				<BulkEditDialog
+					controller={controller}
+					project={state.project}
+					confirmation={bulkEditConfirmation}
+					onCancelConfirmation={cancelBulkEditTitleConfirmation}
+					onContinueConfirmation={continueBulkEditTitleConfirmation}
+					onDiscardDisplay={() => { setBulkEditDraft(createBulkEditDraft()); setBulkEditDiagnostics([]); }}
 					draft={bulkEditDraft}
 					diagnostics={bulkEditDiagnostics}
 					availability={currentBulkEditAvailability}
@@ -3010,12 +3015,6 @@ export function BuilderWorkspace({
 					}}
 					onSubmit={handleBulkEditSubmit}
 					onCancel={closeBulkEdit}
-				/>
-			) : null}
-			{bulkEditConfirmation ? (
-				<BulkEditTitleConfirmation
-					onCancel={cancelBulkEditTitleConfirmation}
-					onContinue={continueBulkEditTitleConfirmation}
 				/>
 			) : null}
 			{creationSession ? (

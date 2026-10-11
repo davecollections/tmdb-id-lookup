@@ -375,19 +375,20 @@ window.prepareGlobalDisplayPresentation = async () => {
 	await showCollections();
 	presentationOpeningState = controller.getState();
 	presentationTrigger = $('[data-action="open-bulk-edit"]');
-	assert(presentationTrigger.getAttribute("aria-label") === "Global display settings", "Global trigger accessible name");
-	assert(presentationTrigger.title === "Global display settings", "Global trigger tooltip");
+	assert(presentationTrigger.getAttribute("aria-label") === "Global settings", "Global trigger accessible name");
+	assert(presentationTrigger.title === "Global settings", "Global trigger tooltip");
 	assert(presentationTrigger.getAttribute("aria-haspopup") === "dialog", "Trigger still announces dialog");
 	await click(presentationTrigger);
 	const dialog = $('[data-bulk-edit-dialog]');
 	assert(dialog && dialog.getAttribute("role") === "dialog" && dialog.getAttribute("aria-modal") === "true", "Existing Global dialog semantics");
-	assert(document.getElementById(dialog.getAttribute("aria-labelledby")).textContent === "Global display settings", "Visible heading labels the dialog");
-	assert(document.getElementById(dialog.getAttribute("aria-describedby")).textContent === "Changes apply across all Collections and Folders.", "Existing helper retained");
-	assert(dialog.querySelector(".panel-kicker").textContent === "ALL COLLECTIONS & FOLDERS", "Existing kicker retained");
+	assert(document.getElementById(dialog.getAttribute("aria-labelledby")).textContent === "Global settings", "Visible heading labels the dialog");
+	assert(document.getElementById(dialog.getAttribute("aria-describedby")).textContent === "Manage display settings and existing Sources in this project.", "Neutral Global settings description");
+	assert(dialog.querySelector('[role="tabpanel"]:not([hidden])').textContent.includes("Changes apply across all Collections and Folders."), "Display helper remains in its panel");
+	assert(dialog.querySelector('[role="tab"][aria-selected="true"]').textContent === "Display settings", "Display is the default tab");
 	assert(!dialog.textContent.includes("Bulk display settings"), "Old visible feature name absent");
 	assert(dialog.querySelectorAll('input:checked').length === 6 && $('[data-action="apply-bulk-edit"]').disabled, "Existing initial draft and Apply state retained");
 	assert(document.activeElement === dialog && $('.workspace-underlay').inert && document.body.classList.contains("settings-modal-open"), "Existing focus, inert workspace and body lock retained");
-	return { width: innerWidth, heading: "Global display settings", triggerLabel: presentationTrigger.getAttribute("aria-label"), triggerTitle: presentationTrigger.title, hasPopup: presentationTrigger.getAttribute("aria-haspopup"), passed: true };
+	return { width: innerWidth, heading: "Global settings", triggerLabel: presentationTrigger.getAttribute("aria-label"), triggerTitle: presentationTrigger.title, hasPopup: presentationTrigger.getAttribute("aria-haspopup"), passed: true };
 };
 window.verifyPresentationClosed = () => {
 	assert(!modal() && !$('[data-bulk-edit-dialog]'), "Escape closes the current presentation dialog");
@@ -674,7 +675,7 @@ function measureHierarchyOrdering({ sortEnabled = true } = {}) {
 		assert(sort.textContent.trim()==="" && sort.querySelector('svg[aria-hidden="true"] path') && sort.getAttribute("aria-label")==="Sort "+header.querySelector("h2").textContent,"Icon-only Sort retains its explicit accessible name");
 		assert(sort.parentElement===heading && sort.previousElementSibling===(settings ?? heading.querySelector("h2")) && sort.getAttribute("aria-haspopup")==="dialog","Left group orders heading, existing settings, then Sort");
 		if(settings) {
-			assert(settings.getAttribute("aria-label")==="Global display settings","Collections settings keeps its explicit accessible name");
+			assert(settings.getAttribute("aria-label")==="Global settings","Collections settings keeps its explicit accessible name");
 			for(const pseudo of [null,"::before"]) for(const property of ["width","height","padding","borderRadius","backgroundColor","borderWidth"]) assert(getComputedStyle(sort,pseudo)[property]===getComputedStyle(settings,pseudo)[property],"Sort shares settings utility styling: "+property);
 		}
 		assert(count.getBoundingClientRect().width>0 && sort.getBoundingClientRect().width>=44,"Count and Sort remain visible");

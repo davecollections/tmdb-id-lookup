@@ -51,7 +51,7 @@ export const validationChecks = Object.freeze([
 	["--test", path.join("tests", "builder-move-folders.test.mjs")],
 	["--test", path.join("tests", "builder-collection-extension.test.mjs")],
 	["--test", path.join("tests", "builder-presentation-updates.test.mjs")],
-	["--test", path.join("tests", "builder-bulk-edit.test.mjs")],
+	["--test", path.join("tests", "builder-bulk-edit.test.mjs"), path.join("tests", "builder-scoped-genre-exclusion-ui.test.mjs")],
 	["--test", path.join("tests", "builder-welcome-import.test.mjs")],
 	["--test", path.join("tests", "builder-workspace-import.test.mjs")],
 	["--test", path.join("tests", "builder-ui.test.mjs")],
