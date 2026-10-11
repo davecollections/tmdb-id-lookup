@@ -2,12 +2,12 @@
   "last_repair": {
     "operation": "network_cache_repair",
     "mode": "collect",
-    "status": "completed",
-    "reason": null,
-    "source_audit_date": "2026-10-10T14:26:56.409Z",
+    "status": "skipped",
+    "reason": "nothing_to_repair",
+    "source_audit_date": "2026-10-11T14:53:47.348Z",
     "audit_freshness": {
-      "audited_at": "2026-10-10T14:26:56.409Z",
-      "age_hours": 0.013516666666666666,
+      "audited_at": "2026-10-11T14:53:47.348Z",
+      "age_hours": 0.012980833333333334,
       "max_age_hours": 36,
       "export_month": "2026-10",
       "export_fingerprint": "sha256:55cf8459df5cae95dddca6fd32837a459ed64d949b0af444ede70e67e592c59b"
@@ -19,74 +19,31 @@
     "max_repair_ids": 200,
     "cap": {
       "maximum": 200,
-      "requested": 3,
+      "requested": 0,
       "exceeded": false
     },
-    "requested_repair_count": 3,
-    "missing_requested": [
-      9562,
-      9563
-    ],
-    "missing_requested_count": 2,
-    "extra_requested": [
-      8179
-    ],
-    "extra_requested_count": 1,
-    "processed_missing": [
-      9562,
-      9563
-    ],
-    "processed_missing_count": 2,
-    "processed_repair_count": 3,
-    "added": [
-      9562,
-      9563
-    ],
-    "added_count": 2,
-    "removed": [
-      8179
-    ],
-    "removed_count": 1,
+    "requested_repair_count": 0,
+    "missing_requested": [],
+    "missing_requested_count": 0,
+    "extra_requested": [],
+    "extra_requested_count": 0,
+    "processed_missing": [],
+    "processed_missing_count": 0,
+    "processed_repair_count": 0,
+    "added": [],
+    "added_count": 0,
+    "removed": [],
+    "removed_count": 0,
     "not_found": [],
     "not_found_count": 0,
     "failed": [],
     "failed_count": 0,
-    "request_plan": {
-      "details_requests": 2,
-      "discover_requests": 2,
-      "base_requests": 4
-    },
-    "requests": {
-      "schema_version": 2,
-      "reservation_id": "38059648077-1-cache-repair",
-      "reservation_sha256": "7164582f81f8e97dc8bb4c0f7cc052c7becf90061593b90b245602343e5a74e7",
-      "utc_date": "2026-10-10",
-      "planned_month": "2026-10",
-      "workflow": "Daily Capped Repair Cache From Audit",
-      "run_id": "38059648077",
-      "run_attempt": "1",
-      "job": "repair-network",
-      "allocation_key": "network_repair",
-      "request_class": "network-repair",
-      "target_dimension": "network-series",
-      "allowance": 2000,
-      "attempts_used": 4,
-      "unused_allowance": 1996,
-      "first_attempt_at": "2026-10-10T14:27:45.092Z",
-      "last_attempt_at": "2026-10-10T14:27:45.941Z",
-      "by_host": {
-        "api.themoviedb.org": 4,
-        "files.tmdb.org": 0
-      },
-      "by_status_or_outcome": {
-        "200": 4
-      },
-      "retries": 0
-    },
+    "request_plan": null,
+    "requests": null,
     "total_cached": 5661,
-    "skipped": false,
-    "started_at": "2026-10-10T14:27:45.068Z",
-    "finished_at": "2026-10-10T14:27:46.189Z",
+    "skipped": true,
+    "started_at": "2026-10-11T14:54:34.078Z",
+    "finished_at": "2026-10-11T14:54:34.089Z",
     "network_count_retry": {
       "candidates": 0,
       "selected": 0,
