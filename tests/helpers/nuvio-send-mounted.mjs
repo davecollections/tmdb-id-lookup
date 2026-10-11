@@ -12,6 +12,7 @@ export async function runNuvioSendChecks(connection, origin, evaluate, { include
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 	await connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, deviceScaleFactor: 1, mobile: true });
 	const local = await evaluate(connection, "window.runSendLocalCases()");
+	assert.deepEqual(await evaluate(connection, "window.runSendGuidePreservation()"), { passed: true, mocked: true, guideRequests: 0 });
 	for (const flow of ["send", "import"]) {
 		await evaluate(connection, `window.preparePinKeyboard("${flow}")`);
 		for (const [index, key] of [..."4826"].entries()) {

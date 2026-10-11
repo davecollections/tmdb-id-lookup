@@ -1,7 +1,6 @@
-import { useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/controller.js";
-import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
+import { BuilderApp } from "../../builder/src/ui/BuilderApp.jsx";
 import { stringifyNuvioProject } from "../../builder/src/serialize/index.js";
 import { EXPORT_SUCCESS_TIMEOUT_MS } from "../../builder/src/ui/export-collections.js";
 import "../../builder/src/styles.css";
@@ -12,12 +11,11 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
 const $ = (selector) => document.querySelector(selector);
 const visible = (selector) => [...document.querySelectorAll(selector)].filter((element) => element.getClientRects().length);
 const modal = () => $("[data-export-collections]");
-let root; let controller; let requests = [];
+let root; let controller; let requests = []; let welcome = false; let preparations = 0;
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (...args) => { requests.push(String(args[0])); return originalFetch(...args); };
 function Workspace() {
-	const state = useSyncExternalStore(controller.subscribe, controller.getState, controller.getState);
-	return <BuilderWorkspace controller={controller} state={state} />;
+	return <BuilderApp controller={controller} initialScreen={welcome ? "welcome" : "workspace"} />;
 }
 // Local imported project structures; no external-service responses are fabricated.
 const source = () => ({ provider: "tmdb", title: "Action", tmdbSourceType: "DISCOVER", mediaType: "MOVIE", sortBy: "popularity.desc", filters: { withGenres: "28" } });
@@ -38,10 +36,13 @@ async function input(element, value) {
 	assert(element, "Missing input target");
 	await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(element, value); element.dispatchEvent(new Event("input", { bubbles: true })); await frame(); });
 }
-async function mount(value, { exportWarnings } = {}) {
+async function mount(value, { exportWarnings, fromWelcome = false } = {}) {
 	if (root) await act(() => root.unmount());
 	controller = createBuilderController();
-	assert(controller.importValue(value).ok, "Import succeeds");
+	welcome = fromWelcome; preparations = 0;
+	if (!welcome) assert(controller.importValue(value).ok, "Import succeeds");
+	const prepare = controller.stringifyProject;
+	controller = { ...controller, stringifyProject: (options) => { preparations++; return prepare(options); } };
 	if (exportWarnings) {
 		// Local diagnostic presentation boundary only; no external response is replaced.
 		const stringify = controller.stringifyProject;
@@ -91,36 +92,7 @@ window.runExportScenario = async () => {
 	assert(!/OPAQUE_SOURCE_PRESERVED|AMBIGUOUS_SOURCE_PRESERVED_OPAQUE|UNMATCHED_CATALOG_SOURCE_REMOVED/.test(modal().textContent), "Internal codes hidden");
 	const owners = [modal(), ...modal().querySelectorAll("*")].filter((element) => element.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
 	assert(owners.length <= 1 && (!owners.length || owners[0] === $(".export-collections-content")), "Only export details can scroll vertically");
-	const instructions = $(".export-import-instructions button");
-	assert(instructions.textContent === "Need to add or merge Collections instead?" && instructions.getAttribute("aria-expanded") === "false", "Import disclosure initially collapsed");
-	assert(document.getElementById(instructions.getAttribute("aria-controls")).hidden, "Disclosure controls hidden instructions");
-	await click(instructions);
-	assert(instructions.getAttribute("aria-expanded") === "true" && document.activeElement === instructions, "Import disclosure retains focus and expands");
-	assert($(".export-import-guide h4").textContent === "Import into Nuvio" && $(".export-import-guide .export-muted").textContent === "Nuvio is currently in beta, so these import steps may change.", "Exact import heading and beta note");
-	const web = $('.export-import-section[aria-label="Web login"]');
-	const tv = $('.export-import-section[aria-label="TV app"]');
-	await click(tv.querySelector("summary"));
-	assert([...web.querySelectorAll("li")].map((item) => item.textContent).join("|") === [
-		"Download JSON from Dingo.", "Sign in to Nuvio.tv.", "Select the target profile and open its Collections import tools.", "Choose Import and select the downloaded file.", "Choose Add as new or Merge.", "Review and confirm in Nuvio.",
-	].join("|"), "Exact Web login steps");
-	assert([...tv.querySelectorAll("li")].map((item) => item.textContent).join("|") === [
-		"Open Nuvio and choose a profile.", "Go to Settings → Content & Discovery → Addons.", "Open Collections.", "Choose Import.", "Choose From File or From URL.", "For From File, select the downloaded JSON file from Downloads, then confirm the import.", "For From URL, enter the direct URL of a JSON file, fetch it, then confirm the import.",
-	].join("|"), "Exact TV app steps");
-	assert(tv.querySelector(".export-import-clarification").textContent === "Dingo provides a downloaded JSON file. It does not currently create a hosted URL.", "Hosted URL clarification");
-	assert($(".export-import-enrichment").textContent === "To help Nuvio add artwork and title details, go to Settings → Integrations → TMDB and turn on Enable TMDB Enrichment. A TMDB API key may be required. Follow the official TMDB API guide to request one.", "Exact TMDB enrichment callout");
-	const links = [...$(".export-import-guide").querySelectorAll("a")];
-	assert(links.map((link) => link.href).join("|") === "https://nuvio.tv/|https://developer.themoviedb.org/docs/getting-started", "Exact external destinations");
-	assert(links[0].textContent === "Nuvio.tv" && links[1].textContent === "official TMDB API guide", "Meaningful link text");
-	assert(links.every((link) => link.target === "_blank" && link.relList.contains("noopener") && link.relList.contains("noreferrer") && link.getAttribute("aria-label") === `${link.textContent} (opens in a new tab)` && getComputedStyle(link).textDecorationLine.includes("underline")), "Accessible external links retain the Builder tab");
-	assert(visible('[aria-modal="true"]').length === 1, "Instructions stay inside the existing modal");
-	const webRect = web.getBoundingClientRect(); const tvRect = tv.getBoundingClientRect();
-	assert(tvRect.top >= webRect.bottom && Math.abs(webRect.left - tvRect.left) < 1 && Math.abs(webRect.width - tvRect.width) < 1, "Web and TV sections stack at every width");
-	const expandedRect = modal().getBoundingClientRect(); const content = $(".export-collections-content");
-	assert(expandedRect.top >= 0 && expandedRect.bottom <= innerHeight && content.scrollHeight > content.clientHeight, "Expanded instructions stay in the viewport with scrolling details");
-	const pinnedTop = $(".export-collections-summary").getBoundingClientRect().top; const pinnedBottom = $(".export-collections-footer").getBoundingClientRect().bottom;
-	await act(() => { content.scrollTop = content.scrollHeight; });
-	assert($(".export-collections-summary").getBoundingClientRect().top === pinnedTop && $(".export-collections-footer").getBoundingClientRect().bottom === pinnedBottom && pinnedBottom <= innerHeight, "Instruction scrolling keeps summary and actions pinned");
-	assert($(".export-import-enrichment").getBoundingClientRect().bottom <= content.getBoundingClientRect().bottom + 1, "Final callout is reachable through details scrolling");
+	await exerciseGuide("export");
 	assert(!$("#root [data-action=download-collections-json]"), "Modal uses existing portal pattern");
 	const actions = [...$(".export-collections-actions").querySelectorAll('button:not([data-action="send-to-nuvio"])')];
 	assert(actions.map((button) => button.querySelector("strong").textContent).join("|") === "Download JSON|Copy JSON", "Manual Download and Copy retained");
@@ -152,7 +124,7 @@ window.runExportScenario = async () => {
 	assert(!modal() && document.activeElement === entry && document.body.style.position !== "fixed", "Close releases lock and restores entry focus");
 	assert(JSON.stringify(controller.getState().selection) === selection, "Builder selection retained");
 	await click(entry);
-	assert($(".export-feedback").textContent === "" && $(".export-import-instructions button").getAttribute("aria-expanded") === "false", "Reopening resets feedback and instructions");
+	assert($(".export-feedback").textContent === "" && !$(".nuvio-guide-content") && $("[data-action=open-import-guide]"), "Reopening resets feedback and guide view");
 	await click($(".export-collections-header button"));
 	return { width: innerWidth, passed: true, requests: requests.length, overflow };
 };
@@ -161,6 +133,8 @@ window.runExportEditorCases = async () => {
 	await mount(invalid); await click($("[data-action=open-export-collections]"));
 	assert($(".export-collections-summary h3").textContent === "2 problems to fix before exporting", "Plural blocking status");
 	assert([...$(".export-collections-actions").querySelectorAll("button")].every((button) => button.disabled), "Blocking errors prevent both deliveries");
+	await exerciseGuide("export");
+	assert([...$(".export-collections-actions").querySelectorAll("button")].every((button) => button.disabled), "Guide return retains blocking validation");
 	const project = controller.getState().project;
 	for (const kind of ["collection", "folder"]) {
 		const trigger = $(`[data-export-edit=${kind}]`); const before = controller.getState().project;
@@ -282,17 +256,25 @@ window.runExportFeedbackCases = async () => {
 		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { async writeText() { throw new Error("denied"); } } });
 		await copy(); await clock.advance(100000);
 		assert(message().startsWith("Copy failed.") && clock.pending === 0 && $(".export-feedback").getAttribute("role") === "alert", "Clipboard failure remains actionable without a success timer");
+		await click($("[data-action=open-import-guide]")); await click($("[data-guide-platform=mobile]"));
+		await clock.advance(100000); await guideBack(); await guideBack();
+		assert(message().startsWith("Copy failed."), "Persistent clipboard failure survives guide navigation");
 		URL.createObjectURL = () => { throw new Error("Download unavailable"); };
 		await download(); await clock.advance(100000);
 		assert(message() === "The download could not start. Try again or use Copy JSON." && clock.pending === 0, "Download failure remains actionable");
 		URL.createObjectURL = originalURL;
 		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { async writeText() {} } });
 		await copy(); assert(message() === "JSON copied.", "Retry replaces failure");
-		await click($(".export-import-instructions button"));
-		await click($(".export-collections-header button"));
+		await click($("[data-action=open-import-guide]"));
+		await clock.advance(4000);
+		await click($("[data-action=import-guide-back]"));
+		assert(message() === "" && clock.pending === 0, "Success timer continues while reading guide");
+		await copy();
+		await click($("[data-action=open-import-guide]"));
+		await click($("[data-action=import-guide-close]"));
 		assert(clock.pending === 0, "Unmount cleans success timer");
 		await click($("[data-action=open-export-collections]"));
-		assert(message() === "" && $(".export-import-instructions button").getAttribute("aria-expanded") === "false", "New modal has no stale feedback or disclosure");
+		assert(message() === "" && !$(".nuvio-guide-content") && $("[data-action=open-import-guide]"), "New modal has no stale feedback or guide view");
 		await copy();
 		await act(() => controller.updateNode(project.collections[0].internalId, { title: "" }));
 		await click($("[data-export-edit=collection]"));
@@ -301,6 +283,9 @@ window.runExportFeedbackCases = async () => {
 		await act(() => controller.updateNode(project.collections[0].internalId, { title: "Collection 1" }));
 		let resolveCopy;
 		Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText() { return new Promise((resolve) => { resolveCopy = resolve; }); } } });
+		await copy(); await click($("[data-action=open-import-guide]")); await act(() => resolveCopy());
+		assert(clock.pending === 1, "Pending clipboard completion keeps the same session in guide");
+		await guideBack(); assert(message() === "JSON copied.", "Clipboard completion while reading is retained on return");
 		await copy(); await download(); await act(() => resolveCopy());
 		assert(message() === "Download started.", "Older clipboard completion cannot replace newer action feedback");
 		await copy(); await click($(".export-collections-header button"));
@@ -318,8 +303,150 @@ window.prepareExportScreenshot = async (state) => {
 	if (state === "workspace") await click($(".export-collections-header button"));
 	if (state === "errors") { const p = controller.getState().project; await act(() => controller.updateNode(p.collections[0].internalId, { title: "" })); }
 	if (state === "warnings") assert(!$(".export-diagnostics.warnings"), "Warning-bearing projects have no Export warning panel");
-	if (state === "instructions" || state === "instructions-end") await click($(".export-import-instructions button"));
-	if (state === "instructions-end") await act(() => { const details = $(".export-collections-content"); details.scrollTop = details.scrollHeight; });
+	if (state === "instructions" || state === "instructions-end") { await click($("[data-action=open-import-guide]")); await click($("[data-guide-platform=tv]")); }
+	if (state === "instructions-end") await act(() => { const details = $(".nuvio-guide-content"); details.scrollTop = details.scrollHeight; });
 	await frame();
 };
 window.exportFixtureReady = true;
+
+const guideDialog = () => document.querySelector('[role="dialog"]');
+const guideBack = () => click($("[data-action=import-guide-back]"));
+const guidePlatforms = ["web", "tv", "mobile", "desktop"];
+function checkGuideGeometry() {
+	const dialog = guideDialog(); const scroller = $(".nuvio-guide-content");
+	assert(dialog && scroller, "Guide is open");
+	const rect = dialog.getBoundingClientRect(); const bounds = dialog.parentElement.getBoundingClientRect();
+	assert(innerWidth === document.documentElement.clientWidth, "Open guide does not inflate the CSS viewport");
+	assert(rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1 && rect.top >= 0 && rect.bottom <= innerHeight + 1, "Guide fits available viewport");
+	assert(document.documentElement.scrollWidth <= innerWidth + 1 && dialog.scrollWidth <= dialog.clientWidth + 1 && scroller.scrollWidth <= scroller.clientWidth + 1, "No horizontal clipping");
+	assert(scroller.clientHeight > 40, "Visible content has usable scrolling space");
+	const owners = [dialog, ...dialog.querySelectorAll("*")].filter(element => element.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
+	assert(owners.length <= 1 && (!owners.length || owners[0] === scroller), "One visible content scroll owner");
+	assert([...dialog.querySelectorAll("button")].every(element => element.getBoundingClientRect().height >= 44), "Guide navigation has 44px touch targets");
+	assert(document.querySelectorAll('[role="dialog"]').length === 1 && document.querySelectorAll('[aria-modal="true"]').length === 1, "One modal, no stacked host");
+	const label = document.getElementById(dialog.getAttribute("aria-labelledby"));
+	assert(label === dialog.querySelector("h2") && label.textContent.length, "Dialog labelled by current heading");
+	return { width: innerWidth, height: innerHeight, passed: true, contentHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight };
+}
+function checkGuideArtwork(expectedOpen) {
+	const content = $(".nuvio-guide-content"); const disclosure = content.querySelector("details");
+	assert(content.dataset.importPlatform === "chooser" && content.querySelectorAll("details").length === 1, "One shared artwork disclosure on the chooser");
+	assert(disclosure === content.lastElementChild && disclosure.previousElementSibling.matches(".nuvio-guide-platforms"), "Artwork help follows all four platform choices in the existing scroller");
+	const summary = disclosure.querySelector("summary"); const copy = disclosure.textContent;
+	assert(summary.textContent === "Missing artwork or title details?" && summary.tabIndex === 0 && summary.getBoundingClientRect().height >= 44, "Native disclosure has an accessible label and touch target");
+	assert(disclosure.open === expectedOpen, expectedOpen ? "Artwork help expands" : "Artwork help is collapsed by default or explicit toggle");
+	assert(copy.includes("may help Nuvio display artwork and title details") && copy.includes("In the Nuvio app") && copy.includes("Settings → Integrations → TMDB") && copy.includes("where available") && copy.includes("optional and isn't required to import Collections"), "Shared advice is optional, app-specific and qualified");
+	assert(!/Nuvio.tv|API key|Source checked|Checked against|physically tested/.test(copy), "No website-settings promise, key requirement or evidence footer");
+	if (!expectedOpen) assert(disclosure.getBoundingClientRect().height <= summary.getBoundingClientRect().height + 1, "Collapsed help occupies only its summary height");
+	assert(requests.length === 0, "Artwork disclosure makes no service requests");
+	return { open: disclosure.open, ...checkGuideGeometry() };
+}
+window.checkGuideArtwork = checkGuideArtwork;
+function checkPlatformContent(id) {
+	const content = $(".nuvio-guide-content"); const copy = content.textContent;
+	assert(content.dataset.importPlatform === id, "Correct platform view");
+	assert(!content.querySelector("details") && !/Missing artwork or title details|TMDB Enrichment/.test(copy), "No redundant artwork disclosure on any platform page");
+	assert(!$(".export-collections-summary") && !$(".export-collections-actions") && !$(".export-filename"), "Export controls and totals do not take guide space");
+	assert(content.firstElementChild.matches(".nuvio-guide-consequence") && $(".nuvio-guide-steps li"), "Consequence appears before numbered instructions");
+	assert(!/Nuvio is currently in beta|A TMDB API key may be required/.test(copy), "Outdated blanket beta/key advice removed");
+	assert(!content.querySelector(".nuvio-guide-note") && !/Source checked|Checked against|physically tested|tested on a physical|0\.1\.29-alpha|inspected TV setting/.test(copy), "Technical evidence stays out of end-user guide content");
+	const stepItems = [...content.querySelectorAll(".nuvio-guide-steps li")].map(item => item.textContent);
+	const steps = stepItems.join("|");
+	if (id === "web") {
+		assert(steps.includes("Choose Add as new, Merge or Overwrite.") && copy.includes("Match Collection IDs, append incoming folders") && copy.includes("does not combine folders by name") && copy.includes("Save your existing Collections first") && copy.includes("exact names"), "Distinct website modes, backup and Dingo merge distinction");
+		const reference = content.querySelector(".nuvio-guide-reference");
+		assert(reference?.querySelector("h3").textContent === "Import modes" && reference.querySelectorAll("dt").length === 3, "All three import modes share a reference panel");
+		assert(reference.querySelector("dt").getBoundingClientRect().top - reference.querySelector("h3").getBoundingClientRect().bottom >= 8, "Reference heading stays separated from the first mode in both hosts");
+		const referenceStyle = getComputedStyle(reference);
+		assert(["Top", "Right", "Bottom", "Left"].every(side => referenceStyle["border" + side + "Style"] === "solid" && referenceStyle["border" + side + "Width"] === "1px"), "Reference has a subtle even border, including forced colours");
+		if (!matchMedia("(forced-colors: active)").matches) assert(referenceStyle.backgroundColor !== getComputedStyle(guideDialog()).backgroundColor, "Reference background differs from main panel");
+		assert(parseFloat(getComputedStyle(reference.querySelector("dd")).fontSize) < parseFloat(getComputedStyle(content).fontSize), "Reference supporting text is compact and scales with enlarged text");
+		const link = content.querySelector("a");
+		assert(link.href === "https://nuvio.tv/" && link.target === "_blank" && link.relList.contains("noopener") && link.relList.contains("noreferrer") && link.getAttribute("aria-label") === "Nuvio.tv (opens in a new tab)" && getComputedStyle(link).textDecorationLine.includes("underline"), "Accessible official website link");
+	} else if (id === "tv") {
+		assert($(".nuvio-guide-consequence p").textContent === "New Collection IDs are added. If an imported Collection has the same ID as an existing Collection, that entire Collection is replaced, including its folders and Sources.", "Exact TV replacement consequence");
+		assert(steps.includes("exactly nuvio-collections.json") && steps.includes("TV device’s Downloads folder") && steps.includes("Settings → Content & Discovery → Addons → Collections → Import") && steps.includes("From File → Load File"), "TV exact filename and actual file-loading route");
+		assert(copy.includes("direct URL of a hosted JSON file") && copy.includes("Dingo does not generate a hosted JSON URL."), "Hosted URL distinction");
+	} else {
+		assert($(".nuvio-guide-consequence p").textContent === "Import replaces the complete Collection list in the current profile. Collections not included in the imported JSON may be lost. Save your existing Collections first if needed.", "Exact complete-list replacement warning");
+		assert(stepItems[0].includes("In Nuvio, copy your existing Collections JSON") && stepItems[0].includes("paste/save it somewhere safe") && stepItems[0].includes("note or file") && stepItems[1] === "In Dingo, choose Copy JSON.", "Save a durable Nuvio backup before Dingo replaces the clipboard");
+		assert(steps.includes("Settings → Appearance → Collections") && steps.includes("Paste the complete JSON"), "Paste import route retained");
+		assert(!/From File|From URL|Add as new|Merge|Download JSON|file picker/.test(copy), "No invented mobile/desktop import methods");
+		assert(copy.includes("other devices using this profile"), "Signed-in sync consequence");
+	}
+}
+async function exerciseGuide(host) {
+	const dialog = guideDialog(); const originalProject = controller.getState().project;
+	const revision = controller.getState().revision; const selection = JSON.stringify(controller.getState().selection);
+	const prepared = preparations; const requestCount = requests.length;
+	const bodyStyle = document.body.getAttribute("style"); const bodyClass = document.body.className;
+	const position = [scrollX, scrollY]; let bodyMutations = 0;
+	const observer = new MutationObserver(items => { bodyMutations += items.length; });
+	observer.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+	const hostScroll = $(host === "export" ? ".export-collections-content" : ".about-credits-content");
+	await act(() => { hostScroll.scrollTop = hostScroll.scrollHeight; });
+	const top = hostScroll.scrollTop;
+	const filename = $(".export-filename")?.textContent;
+	await click($("[data-action=open-import-guide]"));
+	assert(guideDialog() === dialog && document.activeElement === dialog.querySelector("h2"), "Forward heading focus retains existing host");
+	assert([...document.querySelectorAll("[data-guide-platform]")].map(item => item.dataset.guidePlatform).join("|") === guidePlatforms.join("|"), "Exactly four platforms, no iOS");
+	assert(!dialog.querySelector('input, [role="radio"], [role="checkbox"], [aria-pressed], [aria-selected]'), "Chooser is navigation, not selection controls");
+	checkGuideArtwork(false);
+	await click($(".nuvio-guide-section summary"));
+	checkGuideArtwork(true);
+	await window.guideScrollEnd();
+	for (const id of guidePlatforms) {
+		await act(() => $("[data-guide-platform=" + id + "]").scrollIntoView({ block: "nearest" }));
+		const chooserTop = $(".nuvio-guide-content").scrollTop;
+		await click($("[data-guide-platform=" + id + "]"));
+		assert(document.activeElement === dialog.querySelector("h2") && $(".nuvio-guide-content").scrollTop === 0, "Instruction heading focused without retaining old scroll");
+		checkPlatformContent(id); checkGuideGeometry();
+		await act(() => { $(".nuvio-guide-content").scrollTop = $(".nuvio-guide-content").scrollHeight; });
+		assert($(".nuvio-guide-content").lastElementChild.getBoundingClientRect().bottom <= $(".nuvio-guide-content").getBoundingClientRect().bottom + 1, "Final useful guidance reachable without an evidence footer");
+		await guideBack();
+		assert(document.activeElement === $("[data-guide-platform=" + id + "]") && Math.abs($(".nuvio-guide-content").scrollTop - chooserTop) <= 1, "Back restores chosen platform and chooser scroll");
+		checkGuideArtwork(true);
+	}
+	await guideBack();
+	assert(guideDialog() === dialog && document.activeElement === $("[data-action=open-import-guide]"), "Back restores original help entry inside same host");
+	assert(Math.abs($(host === "export" ? ".export-collections-content" : ".about-credits-content").scrollTop - top) <= 1, "Host scroll retained");
+	assert(filename === $(".export-filename")?.textContent && preparations === prepared, "Filename and prepared payload retained without reserialization");
+	assert(controller.getState().project === originalProject && controller.getState().revision === revision && JSON.stringify(controller.getState().selection) === selection, "Guide does not mutate project, revision or selection");
+	assert(requests.length === requestCount, "Guide makes zero service requests");
+	assert(scrollX === position[0] && scrollY === position[1], "Guide does not move document");
+	assert(document.body.getAttribute("style") === bodyStyle && document.body.className === bodyClass && bodyMutations === 0, "Same uninterrupted body lock throughout guide navigation");
+	observer.disconnect();
+}
+window.runImportGuideScenario = async (host) => {
+	await mount(host === "welcome" ? null : profile(), { fromWelcome: host === "welcome" });
+	const entry = $(host === "export" ? "[data-action=open-export-collections]" : "[data-action=open-about-credits]");
+	await click(entry);
+	await exerciseGuide(host);
+	await click($("[data-action=open-import-guide]")); await click($("[data-guide-platform=mobile]"));
+	const viewport = { width: innerWidth, height: innerHeight };
+	await click($("[data-action=import-guide-close]"));
+	assert(!guideDialog() && document.activeElement === entry && document.body.style.position !== "fixed", "Guide Close dismisses original host, unlocks and returns focus");
+	assert(requests.length === 0, "All guide-only paths have zero requests");
+	return { host, ...viewport, passed: true, requests: requests.length };
+};
+window.prepareGuideScreen = async (host, screen) => {
+	await mount(host === "welcome" ? null : profile(), { fromWelcome: host === "welcome" });
+	await click($(host === "export" ? "[data-action=open-export-collections]" : "[data-action=open-about-credits]"));
+	if (screen === "root") return true;
+	await click($("[data-action=open-import-guide]"));
+	if (screen !== "chooser") await click($("[data-guide-platform=" + screen + "]"));
+	return checkGuideGeometry();
+};
+window.checkGuideGeometry = checkGuideGeometry;
+window.guideScrollEnd = async () => {
+	const summary = $(".nuvio-guide-section summary"); if (summary && !summary.parentElement.open) await click(summary);
+	await act(() => { $(".nuvio-guide-content").scrollTop = $(".nuvio-guide-content").scrollHeight; });
+	const content = $(".nuvio-guide-content");
+	assert(content.lastElementChild.getBoundingClientRect().bottom <= content.getBoundingClientRect().bottom + 1, "Final guidance remains reachable after disclosure expansion");
+	return checkGuideGeometry();
+};
+window.checkGuideClosed = () => {
+	assert(!guideDialog() && document.body.style.position !== "fixed", "Escape closes original modal and unlocks");
+	assert(document.activeElement.matches("[data-action=open-export-collections], [data-action=open-about-credits]"), "Escape restores original trigger");
+	return true;
+};
