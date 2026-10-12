@@ -4271,7 +4271,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7786,Channel 4.0,3,,GB,,https://www.themoviedb.org/network/7786
 7788,Maximum Effort Channel,3,,US,,https://www.themoviedb.org/network/7788
 7789,AVROTROS,45,,NL,,https://www.themoviedb.org/network/7789
-7790,KRO-NCRV,43,Hilversum,NL,,https://www.themoviedb.org/network/7790
 7791,Canal6000,1,,,,https://www.themoviedb.org/network/7791
 7792,The Children's Channel,1,,GB,,https://www.themoviedb.org/network/7792
 7797,FarmDaze,0,,,,https://www.themoviedb.org/network/7797
@@ -5659,4 +5658,5 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9560,Ian Channel (US),1,,,,https://www.themoviedb.org/network/9560
 9561,Ideh Nama,1,,,,https://www.themoviedb.org/network/9561
 9562,Discovery,1,,IN,,https://www.themoviedb.org/network/9562
-9563,Meta,1,"Menlo Park, California, USA",US,http://meta.com,https://www.themoviedb.org/network/9563
+9563,Meta,1,"Menlo Park, California, USA",US,,https://www.themoviedb.org/network/9563
+9564,KRO NCRV,1,,,,https://www.themoviedb.org/network/9564
