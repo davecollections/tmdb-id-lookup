@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "reservation_id": "38577472462-1-company-movie",
+  "reservation_sha256": "48d4cbd81340831c92e8880383c2b58b945df6842eb12502fada02c17757b102",
+  "utc_date": "2026-10-14",
+  "planned_month": "2026-10",
+  "workflow": "Monthly TMDB Company Refresh",
+  "run_id": "38577472462",
+  "run_attempt": "1",
+  "job": "load-company-export",
+  "allocation_key": "target_export",
+  "request_class": "target-export",
+  "target_dimension": "company",
+  "allowance": 7,
+  "attempts_used": 1,
+  "unused_allowance": 6,
+  "first_attempt_at": "2026-10-14T14:06:36.464Z",
+  "last_attempt_at": "2026-10-14T14:06:36.464Z",
+  "by_host": {
+    "api.themoviedb.org": 0,
+    "files.tmdb.org": 1
+  },
+  "by_status_or_outcome": {
+    "200": 1
+  },
+  "retries": 0,
+  "month": "2026-10",
+  "datasets": [
+    "companies"
+  ],
+  "targets": {
+    "companies": "sha256:5cb086e4b1aaf2d0920083ee60cb9c10fba4995e53dfc911e45d5856e6cf3384"
+  }
+}
