@@ -19,6 +19,7 @@
 .export-collections-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
 .export-collections-totals > div { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; }
 .export-collections-totals dt, .export-muted, .export-filename { color: var(--muted); font-size: .82rem; }
+.export-collections-totals dt { overflow-wrap: anywhere; }
 .export-collections-totals dd { margin: 5px 0 0; font-size: 1.4rem; font-weight: 700; }
 .export-collections-content { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 2px 22px 16px; scroll-padding-block: 12px; }
 .export-diagnostics { padding: 12px 14px; border: 1px solid var(--amber); border-radius: 10px; margin-bottom: 14px; }

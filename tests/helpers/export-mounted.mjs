@@ -14,8 +14,13 @@ export async function runExportRegressions(connection, origin, evaluate) {
 	}
 	const regressions = {};
 	for (const name of ["EditorCases", "FeedbackCases", "WarningCases", "LargeCase"]) regressions[name] = await evaluate(connection, `window.runExport${name}()`);
+	const totals = [];
+	for (const [width, height] of [...[360,384,393,402,412,1280].map(width => [width,900]), [393,600], [1280,600]]) {
+		await connection.command("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 900 });
+		for (const rootFont of [16,32]) totals.push(await evaluate(connection, `window.runExportTotalsCase(${rootFont})`));
+	}
 	await runExportKeyboardChecks(connection, evaluate);
-	return { exports, regressions, exportErrors: await evaluate(connection, "window.__mountedErrors") };
+	return { exports, regressions, totals, exportErrors: await evaluate(connection, "window.__mountedErrors") };
 }
 
 export async function runImportGuideChecks(connection, origin, evaluate) {

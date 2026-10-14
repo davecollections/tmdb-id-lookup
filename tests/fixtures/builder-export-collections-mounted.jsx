@@ -298,6 +298,61 @@ window.runExportFeedbackCases = async () => {
 	}
 };
 window.prepareExportCase = async () => { await mount(profile()); await click($("[data-action=open-export-collections]")); return true; };
+// Measure painted text, not only the dt/dd boxes: words can overflow a contained grid track.
+window.checkExportTotalsGeometry = () => {
+	const dialog = modal(), grid = $(".export-collections-totals"), cards = [...grid.children];
+	assert(cards.length === 3 && cards.map(card => card.querySelector("dt").textContent).join("|") === "Collections|Folders|Sources", "All three complete totals labels remain present");
+	const bounds = cards.map(card => card.getBoundingClientRect());
+	assert(getComputedStyle(grid).display === "grid" && bounds.every(rect => Math.abs(rect.top - bounds[0].top) <= 1 && Math.abs(rect.width - bounds[0].width) <= 1) && bounds.slice(1).every((rect, index) => rect.left >= bounds[index].right), "Totals retain three equal columns in one row");
+	const fragments = cards.flatMap((card, index) => {
+		const box = bounds[index], style = getComputedStyle(card);
+		const left = box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+		const right = box.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight);
+		return [...card.querySelectorAll("dt, dd")].flatMap(element => {
+			const text = element.textContent, css = getComputedStyle(element), range = document.createRange();
+			range.selectNodeContents(element);
+			const rects = [...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0);
+			assert(text.trim() && rects.length && css.visibility === "visible" && Number(css.opacity) > 0, `${text}: total text is visible`);
+			for (const rect of rects) {
+				assert(rect.left >= left - 1 && rect.right <= right + 1 && rect.top >= box.top && rect.bottom <= box.bottom, `${text}: rendered text stays inside its totals card at ${innerWidth}px / ${getComputedStyle(document.documentElement).fontSize}`);
+				assert(bounds.every((other, otherIndex) => otherIndex === index || rect.right <= other.left || rect.left >= other.right), `${text}: no text fragment intrudes into another totals card`);
+			}
+			return rects.map(rect => ({ text, kind: element.tagName, card: index, rect: rect.toJSON() }));
+		});
+	});
+	const box = dialog.getBoundingClientRect(), content = $(".export-collections-content");
+	assert(box.top >= 0 && box.bottom <= innerHeight + 1 && dialog.scrollWidth <= dialog.clientWidth + 1 && document.documentElement.scrollWidth <= innerWidth + 1, "Totals reflow retains dialog and horizontal containment");
+	assert($(".export-collections-footer").getBoundingClientRect().bottom <= innerHeight + 1, "Export footer remains reachable");
+	const owners = [dialog, ...dialog.querySelectorAll("*")].filter(element => element.getClientRects().length && ["auto", "scroll"].includes(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
+	assert(owners.length <= 1 && (!owners.length || owners[0] === content), "Only Export content scrolls");
+	assert([...dialog.querySelectorAll("button")].every(button => button.getBoundingClientRect().height >= 44), "Export retains 44px touch targets");
+	return { width: innerWidth, height: innerHeight, rootFont: getComputedStyle(document.documentElement).fontSize, totalsHeight: grid.getBoundingClientRect().height, fragments, passed: true };
+};
+window.runExportTotalsCase = async (rootFont) => {
+	const previous = document.documentElement.style.fontSize;
+	try {
+		document.documentElement.style.fontSize = rootFont === 32 ? "200%" : "100%";
+		await window.prepareExportCase();
+		assert(getComputedStyle(document.documentElement).fontSize === `${rootFont}px`, "Totals test uses the actual requested root font size");
+		const project = controller.getState().project, json = stringifyNuvioProject(project).json;
+		assertCountsMatchJson(json);
+		const result = window.checkExportTotalsGeometry(), content = $(".export-collections-content");
+		for (const action of ["send-to-nuvio", "download-collections-json", "copy-collections-json", "open-import-guide"]) {
+			const button = $(`[data-action=${action}]`);
+			assert(button && !button.disabled, `${action}: remains available`);
+			button.focus(); await frame();
+			const rect = button.getBoundingClientRect(), clip = content.getBoundingClientRect();
+			assert(document.activeElement === button && rect.bottom > clip.top && rect.top < clip.bottom, `${action}: focus brings the action into the content viewport`);
+		}
+		if (innerWidth === 393 && innerHeight === 900 && rootFont === 32) await exerciseGuide("export");
+		assert(controller.getState().project === project && stringifyNuvioProject(project).json === json && requests.length === 0, "Reflow and guide navigation preserve project bytes without service requests");
+		assertCountsMatchJson(json);
+		await click($(".export-collections-header button"));
+		assert(!modal() && document.activeElement === $("[data-action=open-export-collections]") && document.body.style.position !== "fixed", "Reflow dismissal restores the workspace trigger");
+		return result;
+	} finally { document.documentElement.style.fontSize = previous; }
+};
+
 window.prepareExportScreenshot = async (state) => {
 	await window.prepareExportCase();
 	if (state === "workspace") await click($(".export-collections-header button"));
