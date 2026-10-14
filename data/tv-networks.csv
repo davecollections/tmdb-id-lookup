@@ -4435,7 +4435,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8041,1001,1,,,,https://www.themoviedb.org/network/8041
 8042,FR3,0,,,,https://www.themoviedb.org/network/8042
 8044,Viu,3,,,,https://www.themoviedb.org/network/8044
-8045,SVT,1,,,,https://www.themoviedb.org/network/8045
 8046,X,6,"Bastrop, Texas",,,https://www.themoviedb.org/network/8046
 8047,亞洲旅遊台,1,,,,https://www.themoviedb.org/network/8047
 8048,NBC.com,4,"New York City, New York",US,,https://www.themoviedb.org/network/8048
@@ -5656,3 +5655,4 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9563,Meta,1,"Menlo Park, California, USA",US,,https://www.themoviedb.org/network/9563
 9565,History (PL),1,,,,https://www.themoviedb.org/network/9565
 9566,Nick Jr. Israel,1,,,,https://www.themoviedb.org/network/9566
+9568,YouTube,0,,,,https://www.themoviedb.org/network/9568
