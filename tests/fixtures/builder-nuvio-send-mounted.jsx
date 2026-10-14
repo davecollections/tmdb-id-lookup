@@ -436,7 +436,7 @@ window.prepareSendScreen = async (screen) => {
 		assert([headingBox, supportBox, activityBox].every(rect => Math.abs(rect.left + rect.width / 2 - center) <= 1) && activityBox.top >= supportBox.bottom, "Progress title, supporting line and dots form one centered vertical unit");
 	}
 	if (["review", "verified", "identical"].includes(screen)) assert(getComputedStyle(dialog.querySelector("h2")).textAlign !== "center", "Stable modal content keeps its approved alignment");
-	if (screen === "export" && innerWidth === 393 && innerHeight === 900 && getComputedStyle(document.documentElement).fontSize === "16px") assert(box.height < 584, "Phone Export is materially shorter than the prior 624px warning-bearing view");
+	if (screen === "export" && innerWidth === 393 && innerHeight === 900 && getComputedStyle(document.documentElement).fontSize === "16px") assert(box.height < 600, `Phone Export height ${box.height}px must stay below 600px: approved import help and font wrapping remain below the prior 624px design`);
 	if (["verified", "identical", "rejected"].includes(screen)) assert(button("Done") && dialog.querySelectorAll("button").length === 1, `${screen}: one Done dismissal`);
 	return { screen, width: innerWidth, height: innerHeight, modalHeight: Math.round(box.height), words: dialog.innerText.trim().split(/\s+/).length, scrollOwners: owners.length, passed: true };
 
