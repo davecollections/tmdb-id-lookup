@@ -141,6 +141,7 @@ test("shared Export orchestration runs each local scenario once at the retained 
 		...["window.runExportScenario()", "window.runExportScenario()", "window.runExportScenario()",
 			"window.runExportEditorCases()", "window.runExportFeedbackCases()", "window.runExportWarningCases()", "window.runExportLargeCase()"]
 			.map((expression) => [expression, { expression }]),
+		...Array.from({ length: 8 }, () => [16,32].map(font => ["window.runExportTotalsCase(" + font + ")", { passed: true }])).flat(),
 		["window.prepareExportCase()", undefined],
 		['document.querySelector("[data-action=open-import-guide]").focus()', undefined],
 		['new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))', undefined],
@@ -176,7 +177,9 @@ test("shared Export orchestration runs each local scenario once at the retained 
 		["keyDown", "Tab", 8], ["keyUp", "Tab", 0],
 		["keyDown", "Escape", 0], ["keyUp", "Escape", 0],
 	], "Shared Export helper opens, tabs, wraps both ways and dismisses the guide");
-	assert.deepEqual(widths, [393, 900, 1280]);
+	assert.deepEqual(widths, [393, 900, 1280, 360, 384, 393, 402, 412, 1280, 393, 1280]);
+	assert.equal(result.totals.length, 16);
+	assert.ok(result.totals.every(result => result.passed));
 	assert.equal(expressions.filter((value) => value === "window.runExportScenario()").length, 3);
 	for (const name of ["EditorCases", "FeedbackCases", "WarningCases", "LargeCase"]) {
 		assert.equal(expressions.filter((value) => value === `window.runExport${name}()`).length, 1);
