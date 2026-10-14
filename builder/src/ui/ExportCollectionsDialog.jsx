@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useBuilderControllerState } from "./use-builder-controller.js";
 import { handleDialogKeyDown } from "./modal-focus.js";
@@ -12,6 +12,7 @@ import {
 import { NuvioSendContent } from "./NuvioSendContent.jsx";
 import { useNuvioSendState } from "./use-nuvio-send.js";
 import { sendInProgress, sendStatusLabel } from "./nuvio-send-presentation.js";
+import { NuvioImportGuide, NuvioImportGuideEntry } from "./NuvioImportGuide.jsx";
 import "./export-collections.css";
 
 const useBeforePaint = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -30,7 +31,7 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, onMergeIn
 	function enterSend() {
 		if (!sendCoordinator || !connection) return;
 		if (!pendingSend) sendCoordinator.prepare();
-		actionVersion.current++; setFeedback(null); setImportExpanded(false);
+		actionVersion.current++; setFeedback(null);
 		setView("send");
 	}
 	const { project } = useBuilderControllerState(controller);
@@ -40,8 +41,8 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, onMergeIn
 	const counts = current?.counts ?? collectionExportCounts(project.collections);
 	const [filename] = useState(collectionExportFilename);
 	const [feedback, setFeedback] = useState(null);
-	const [importExpanded, setImportExpanded] = useState(false);
-	const importInstructionsId = useId();
+	const guideEntryRef = useRef(null);
+	const guideReturn = useRef(null);
 
 	const [copying, setCopying] = useState(false);
 	const busy = useRef(false);
@@ -76,6 +77,17 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, onMergeIn
 		scrollRef.current.scrollTop = previous.top;
 		focusElementWithoutScroll(previous.trigger?.isConnected && previous.trigger.getClientRects().length ? previous.trigger : statusRef.current);
 	}, [locked, current]);
+
+	useBeforePaint(() => {
+		if (view !== "export" || !guideReturn.current) return;
+		scrollRef.current.scrollTop = guideReturn.current.top;
+		guideReturn.current = null;
+		focusElementWithoutScroll(guideEntryRef.current);
+	}, [view]);
+	function enterGuide() {
+		guideReturn.current = { top: scrollRef.current.scrollTop };
+		setView("guide");
+	}
 
 	function edit(diagnostic, trigger) {
 		// Re-resolve the target at activation; never launch from a retained snapshot.
@@ -122,10 +134,10 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, onMergeIn
 		<div className="settings-modal-backdrop export-collections-backdrop" style={viewportStyle ?? undefined} data-backdrop-dismiss="false" onMouseDown={(event) => {
 			if (event.target === event.currentTarget) { event.preventDefault(); focusElementWithoutScroll(dialogRef.current); }
 		}}>
-			<section className={`export-collections-dialog${view === "send" ? " is-send nuvio-connection-dialog" : ""}`} data-export-collections data-nuvio-send={view === "send" ? true : undefined} data-send-phase={view === "send" ? attempt.phase : undefined} ref={dialogRef} role={locked ? undefined : "dialog"} aria-modal={locked ? undefined : "true"} aria-labelledby="export-collections-title" tabIndex={-1} onKeyDown={(event) => {
+			<section className={`export-collections-dialog${view === "send" ? " is-send nuvio-connection-dialog" : view === "guide" ? " is-import-guide" : ""}`} data-export-collections data-nuvio-send={view === "send" ? true : undefined} data-send-phase={view === "send" ? attempt.phase : undefined} ref={dialogRef} role={locked ? undefined : "dialog"} aria-modal={locked ? undefined : "true"} aria-labelledby="export-collections-title" tabIndex={-1} onKeyDown={(event) => {
 				if (!locked) handleDialogKeyDown(event.target.tagName === "H2" ? { key: event.key, shiftKey: event.shiftKey, target: dialogRef.current, preventDefault: () => event.preventDefault() } : event, dialogRef.current, close, { includeControl: (element) => element.getClientRects().length > 0 });
 			}}>
-				{view === "send" ? <NuvioSendContent connection={connection} coordinator={sendCoordinator} attempt={attempt} onClose={close} onMergeInstead={onMergeInstead} onBack={() => { setView("export"); requestAnimationFrame(() => focusElementWithoutScroll(closeRef.current)); }} /> : <>
+				{view === "guide" ? <NuvioImportGuide titleId="export-collections-title" hostTitle="Export & Send" onBack={() => setView("export")} onClose={close} /> : view === "send" ? <NuvioSendContent connection={connection} coordinator={sendCoordinator} attempt={attempt} onClose={close} onMergeInstead={onMergeInstead} onBack={() => { setView("export"); requestAnimationFrame(() => focusElementWithoutScroll(closeRef.current)); }} /> : <>
 				<header className="export-collections-header"><h2 id="export-collections-title">Export &amp; Send</h2><button type="button" ref={closeRef} aria-label="Close Export & Send" onClick={close}>Close</button></header>
 				<div className="export-collections-summary">
 					<h3 ref={statusRef} tabIndex={-1} className={errorCount ? "export-problem-status" : ""} role="status">{!current ? "Checking your collections…" : errorCount ? `${errorCount} ${errorCount === 1 ? "problem" : "problems"} to fix before exporting` : "Ready to export"}</h3>
@@ -140,38 +152,7 @@ export function ExportCollectionsDialog({ controller, onClose, onEdit, onMergeIn
 						<button type="button" className="secondary-action export-manual-action" data-action="copy-collections-json" disabled={!current?.ok || copying} onClick={copy}><strong>{copying ? "Copying…" : "Copy JSON"}</strong><small>Copy the Collection JSON to your clipboard.</small></button>
 					</div>
 					{current && errorCount > 0 ? <section className="export-diagnostics errors" aria-label="Export errors"><h4>Resolve before exporting</h4>{diagnostics(current.errors)}<p>No partial file will be exported.</p></section> : null}
-					<div className="export-import-instructions">
-						<button type="button" aria-expanded={importExpanded} aria-controls={importInstructionsId} onClick={() => setImportExpanded(!importExpanded)}>Need to add or merge Collections instead?</button>
-						<div id={importInstructionsId} className="export-import-guide" hidden={!importExpanded}>
-							<h4>Import into Nuvio</h4>
-							<p className="export-muted">Nuvio is currently in beta, so these import steps may change.</p>
-							<section className="export-import-section" aria-label="Web login">
-								<h5>Add or merge on Nuvio.tv</h5>
-								<ol>
-									<li>Download JSON from Dingo.</li>
-									<li>Sign in to <a href="https://nuvio.tv/" target="_blank" rel="noopener noreferrer" aria-label="Nuvio.tv (opens in a new tab)">Nuvio.tv</a>.</li>
-									<li>Select the target profile and open its Collections import tools.</li>
-									<li>Choose Import and select the downloaded file.</li>
-									<li>Choose Add as new or Merge.</li>
-									<li>Review and confirm in Nuvio.</li>
-								</ol>
-								<p className="export-import-clarification">Nuvio’s Merge uses Nuvio’s own matching rules and may differ from Dingo’s Merge exact matches.</p>
-							</section>
-							<details className="export-import-section" aria-label="TV app"><summary tabIndex={0}>TV import and TMDB Enrichment</summary>
-								<h5>TV app</h5>
-								<ol>
-									<li>Open Nuvio and choose a profile.</li>
-									<li>Go to Settings → Content &amp; Discovery → Addons.</li>
-									<li>Open Collections.</li>
-									<li>Choose Import.</li>
-									<li>Choose From File or From URL.</li>
-									<li>For From File, select the downloaded JSON file from Downloads, then confirm the import.</li>
-									<li>For From URL, enter the direct URL of a JSON file, fetch it, then confirm the import.</li>
-								</ol>
-								<p className="export-import-clarification">Dingo provides a downloaded JSON file. It does not currently create a hosted URL.</p>
-							<p className="export-import-enrichment">To help Nuvio add artwork and title details, go to Settings → Integrations → TMDB and turn on Enable TMDB Enrichment. A TMDB API key may be required. Follow the <a href="https://developer.themoviedb.org/docs/getting-started" target="_blank" rel="noopener noreferrer" aria-label="official TMDB API guide (opens in a new tab)">official TMDB API guide</a> to request one.</p></details>
-						</div>
-					</div>
+					<NuvioImportGuideEntry ref={guideEntryRef} onClick={enterGuide} />
 				</div>
 				<footer className="export-collections-footer">
 					<p className="export-feedback" role={feedback?.error ? "alert" : "status"} aria-live={feedback?.error ? "assertive" : "polite"}>{feedback?.text ?? ""}</p>

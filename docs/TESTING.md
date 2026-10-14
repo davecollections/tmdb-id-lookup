@@ -425,6 +425,23 @@ The final Export warning-removal and centered-progress cleanup passed focused Ex
 
 **Final integration:** [PR #245](https://github.com/davecollections/tmdb-id-lookup/pull/245) passed [final-head validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35968179710) and merged as `2dd4652fe23a9ee7d38d5238a3c843504ecca172`, closing #244. [Post-merge Nuvio Contract Validation](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35972599861) and [automatic Pages publication](https://github.com/davecollections/tmdb-id-lookup/actions/runs/35972599829) succeeded. These later green runs are independent evidence and do not erase the earlier local timing failure. No Worker deployment or manual site publication was involved.
 
+## Four-platform Nuvio import guide — Roadmap 7
+
+Run the existing Export/About suites and the focused branch of the existing mounted harness:
+
+```powershell
+node --test tests/builder-export-collections.test.mjs tests/builder-about-credits-ui.test.mjs tests/builder-nuvio-send-ui.test.mjs tests/builder-nuvio-send.test.mjs
+$env:NUVIO_GUIDE_ONLY = "1"
+node --test --test-name-pattern="mounted Nuvio import guide" tests/builder-bulk-edit-mounted.test.mjs
+Remove-Item Env:NUVIO_GUIDE_ONLY
+```
+
+Set `NUVIO_GUIDE_SCREENSHOT_DIR` to an absolute directory outside Git for actual rendered screenshots and geometry measurements. The shared Export fixture covers Export, workspace About and Welcome About with no project; all four platform consequences/routes; one shared artwork disclosure beneath the chooser rows from both entry points, collapsed by default, native Enter/Space activation, retained open state on Back and no duplicate on any platform page; no technical evidence footers; durable copy-and-save backup before Dingo Copy JSON; the three website modes in a neutral bordered reference panel; reachable final guidance; native Tab/Shift-Tab/Escape; Back/Close; heading and return focus; unchanged host/body-lock identity, document/chooser/host scrolling; cached preparation and filename; unchanged project/revision/selection; zero service requests; and existing delivery/diagnostic/feedback regressions.
+
+The guide matrix uses 360/384/393/402/412/899/900/901/1280px widths, 393px and 1280px short heights, 200% text, forced colours/reduced motion and simulated Visual Viewport geometry. Both collapsed and expanded artwork guidance are checked across these layouts, with native Tab order, reachable final text and unchanged project/modal/request state. Screenshots include both hosts’ chooser states and enlarged-text/forced-colour disclosure views. These are local presentation checks using locally authored project structures. No Nuvio response is fabricated or live import performed by the guide checks. Existing Send safety/Merge instead regressions retain their separately labelled local mechanics scope; the guide is not authenticated or physical-device acceptance.
+
+This bounded instructional/presentation change calls for focused regression checks, a production Builder build, syntax checks and Git hygiene. A new full canonical run is only warranted by further implementation risk or failures, not the review stage alone.
+
 ## Mounted browser lifecycle
 
 Studio/Network Shared Advanced (#218) reuses the native fixture with combined locale, genres, keywords, date/year and threshold settings. Run `TMDB_NATIVE_SHARED_ADVANCED_ONLY=1` with `node --test --test-name-pattern="mounted native Shared Advanced|mounted Network hierarchy locks" tests/builder-source-edit-mounted.test.mjs`. The focused run covers all eight family/surface types across phone, desktop and short height, plus one 360/384/393/402/412px disclosure sweep. It checks genre default/custom/reset, Studio Both, explicit exact-query Preview/cache and real response/poster or empty-state parity, Review/export, clear/reopen, focus, one scroll owner and atomic application. The fixture serves the actual bundled keyword/code catalogues; production Worker/TMDB/images remain required. The default broader run retains the eight combined cases without repeating the width sweep. Screenshots use the existing `TMDB_204_SCREENSHOTS` binding outside Git.

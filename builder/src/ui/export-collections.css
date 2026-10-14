@@ -32,17 +32,6 @@
 .export-warning-group button { justify-self: start; }
 .export-warning-location { margin-top: 12px; }
 .export-warning-location li + li { margin-top: 4px; }
-.export-import-instructions { font-size: .86rem; }
-.export-import-instructions button { text-align: left; }
-.export-import-guide:not([hidden]) { display: grid; gap: 16px; margin-top: 16px; }
-.export-import-guide h4 { font-size: 1rem; }
-.export-import-guide h5 { font-size: .92rem; margin: 0; }
-.export-import-guide a { color: var(--cyan-bright); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
-.export-import-section { min-width: 0; }
-.export-import-clarification { margin-top: 14px !important; color: var(--muted); }
-.export-import-enrichment { padding: 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--elevated); }
-.export-import-instructions ol { padding-left: 24px; margin: 12px 0 0; line-height: 1.55; }
-.export-import-instructions li + li { margin-top: 8px; }
 .export-collections-footer { padding: 16px 22px 12px; border-top: 1px solid var(--border); }
 .export-collections-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
 .export-collections-actions button { display: grid; gap: 5px; text-align: left; min-width: 0; }
@@ -56,7 +45,6 @@
 .send-last h4 { color: var(--muted); font-size: .72rem; }
 .send-last p { font-size: .82rem; }
 .export-collections-actions .send-last button { display: block; padding: 6px 10px; background: transparent; font-size: .78rem; }
-.export-import-section summary { min-height: 44px; align-content: center; cursor: pointer; }
 .export-collections-actions .editor-apply { border-color: var(--cyan-bright); background: #124155; }
 .export-feedback { min-height: 1.55em; margin-top: 9px !important; font-size: .86rem; }
 @media (min-width: 900px) { .app-header:has(.workspace-header-actions) { grid-template-columns: minmax(0, 1fr) auto; } }
@@ -72,7 +60,5 @@
 }
 @media (forced-colors: active) {
 	.export-collections-dialog, .export-collections-dialog button, .export-entry-action, .export-diagnostics { border-color: CanvasText; }
-	.export-import-enrichment { border-color: CanvasText; }
-	.export-import-guide a { color: LinkText; }
 	.export-collections-dialog button:disabled { color: GrayText; opacity: 1; }
 }

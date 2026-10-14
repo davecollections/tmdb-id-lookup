@@ -436,7 +436,7 @@ window.prepareSendScreen = async (screen) => {
 		assert([headingBox, supportBox, activityBox].every(rect => Math.abs(rect.left + rect.width / 2 - center) <= 1) && activityBox.top >= supportBox.bottom, "Progress title, supporting line and dots form one centered vertical unit");
 	}
 	if (["review", "verified", "identical"].includes(screen)) assert(getComputedStyle(dialog.querySelector("h2")).textAlign !== "center", "Stable modal content keeps its approved alignment");
-	if (screen === "export" && innerWidth === 393 && innerHeight === 900 && getComputedStyle(document.documentElement).fontSize === "16px") assert(box.height < 584, "Phone Export is materially shorter than the prior 624px warning-bearing view");
+	if (screen === "export" && innerWidth === 393 && innerHeight === 900 && getComputedStyle(document.documentElement).fontSize === "16px") assert(box.height < 600, `Phone Export height ${box.height}px must stay below 600px: approved import help and font wrapping remain below the prior 624px design`);
 	if (["verified", "identical", "rejected"].includes(screen)) assert(button("Done") && dialog.querySelectorAll("button").length === 1, `${screen}: one Done dismissal`);
 	return { screen, width: innerWidth, height: innerHeight, modalHeight: Math.round(box.height), words: dialog.innerText.trim().split(/\s+/).length, scrollOwners: owners.length, passed: true };
 
@@ -459,3 +459,25 @@ window.finishPinKeyboard = async (flow) => {
 	return pinCount() === 1 && api.connection.getProfileAccess(protectedA.id).unlocked && (flow === "send" ? phase() === "REVIEWED" : Boolean($(".nuvio-review-profile, .workspace-import-source")));
 };
 window.nuvioSendFixtureReady = true;
+
+window.runSendGuidePreservation = async () => {
+	for (const mode of ["verified", "unknown-previous"]) {
+		await ready({ mode }); await submit(); await complete();
+		const resultPhase = phase();
+		const resultText = modal().textContent;
+		await click(button(mode === "verified" ? "Done" : "Close"));
+		await click($("[data-action=open-export-collections]"));
+		const host = modal(); const lastSend = $(".send-last").textContent;
+		const before = { requests: api.requests.length, writes: pushCount(), connection: api.connection.getState(), project: controller.getState().project, revision: controller.getState().revision, json: createCollectionExportPayload(controller)().json, filename: $(".export-filename").textContent };
+		await click($("[data-action=open-import-guide]"));
+		await click($("[data-guide-platform=tv]"));
+		await click($("[data-action=import-guide-back]"));
+		await click($("[data-action=import-guide-back]"));
+		assert(modal() === host && $(".send-last").textContent === lastSend && $(".export-filename").textContent === before.filename, "Guide preserves Export host, Send history and filename");
+		assert(api.requests.length === before.requests && pushCount() === before.writes && api.connection.getState() === before.connection, "Guide does not request, mutate connection or dispatch");
+		assert(controller.getState().project === before.project && controller.getState().revision === before.revision && createCollectionExportPayload(controller)().json === before.json, "Guide preserves project and exact bytes");
+		await click($("[data-action=view-send-status]"));
+		assert(phase() === resultPhase && modal().textContent === resultText, "Retained verified/unknown Send evidence remains exact after guide navigation");
+	}
+	return { passed: true, mocked: true, guideRequests: 0 };
+};

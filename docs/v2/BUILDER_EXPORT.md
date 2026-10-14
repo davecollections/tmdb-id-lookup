@@ -21,7 +21,7 @@ Visible content is:
 4. Primary **Send to Nuvio**, with **Replace the Collections on a Nuvio profile.** Retained Last Send appears here when present.
 5. **Download JSON** and **Copy JSON**, using quieter neutral surfaces while retaining enabled contrast and tap targets.
 6. Blocking problems under **Resolve before exporting**, with supported editor links and no partial output.
-7. Collapsed **Need to add or merge Collections instead?** help.
+7. Visible secondary **How to import into Nuvio** entry.
 
 Opening Export performs no Nuvio request. Manual actions require no connection and remain available when a Send attempt is unresolved, subject to ordinary export validation. Success feedback says **JSON copied.** or **Download started.** and expires after 4,000ms. Repeating an action replaces feedback and restarts the timer, which continues during diagnostic editing. Clipboard/download failures remain actionable until retry, another action or Close. Closing clears the session; late clipboard completion cannot update an unmounted session or supersede newer feedback.
 
@@ -33,17 +33,37 @@ Non-blocking preservation warnings, counts and warning-qualified readiness are n
 
 ## Import into Nuvio
 
-The manual Add/Merge disclosure instructs users to download JSON, sign in to [Nuvio.tv](https://nuvio.tv/), select the target profile, open its Collections import tools, choose Import and the file, select **Add as new** or **Merge**, then review and confirm in Nuvio. It explains that Nuvio's Merge uses its own matching rules and may differ from Dingo's Merge exact matches. Navigation stays general where not authenticated/live-verified.
+Export & Send and About & Credits share the contents-only **How to import into Nuvio** guide. The visible entry reads **Instructions for your Nuvio app or the website.** Each existing host opens a four-row platform chooser, then one platform's instructions. Back returns one level and restores the selected row/help entry and scroll; Close/Escape dismisses the original host. Welcome's About route works without a project.
 
-The nested **TV import and TMDB Enrichment** disclosure retains these owner-supplied steps:
+The original dialog owns its portal, focus trap, body lock and visible viewport observer. Only guide contents change; one content scroller remains visible. Export totals, filename and controls are absent while reading. The Export component, cached payload, session filename, diagnostic state, Send evidence and feedback timers survive navigation. Guide navigation performs no request, preparation, project edit or Send operation.
 
-1. Open Nuvio and choose a profile.
-2. Go to Settings → Content & Discovery → Addons → Collections → Import.
-3. Choose From File or From URL. For a file, select the downloaded JSON from Downloads and confirm; for URL, fetch an already hosted JSON file and confirm. Dingo does not create a hosted URL.
+| Platform | Import route | Consequence |
+| --- | --- | --- |
+| Nuvio.tv | Download JSON → sign in → intended profile → Collections → Import file → mode → review/confirm | **Add as new** keeps existing Collections and resolves incoming ID collisions. **Merge** matches Collection IDs, appends incoming folders and skips Sources recognised as duplicates; it does not merge folders by name. **Overwrite** replaces the complete profile list; save existing Collections first. |
+| Android TV / Google TV | Download → rename exactly `nuvio-collections.json` → TV Downloads → intended profile → Settings → Content & Discovery → Addons → Collections → Import → From File → Load File → review/confirm | New Collection IDs are added; matching IDs replace the entire existing Collection, including folders and Sources. Optional From URL loads an already hosted direct JSON URL; Dingo does not host JSON. |
+| Android Mobile | Copy existing Nuvio Collections JSON → paste/save in a safe note or file → Dingo Copy JSON → intended profile → Settings → Appearance → Collections → Import → paste complete JSON → Import | Replaces the complete Collection list. Missing Collections may be lost. Signed-in changes can sync to the account and other devices on that profile. |
+| Desktop | Separately maintained desktop wording for the same copy-and-save backup, Dingo Copy JSON and Settings → Appearance → Collections → Import → paste route | Complete-list replacement, with the same backup and signed-in sync warning. Inspected release is alpha software. |
 
-TMDB Enrichment guidance points to Settings → Integrations → TMDB → Enable TMDB Enrichment, with an API-key caveat and the [official TMDB API guide](https://developer.themoviedb.org/docs/getting-started). Both external links open a new tab with matching accessible announcements and `rel="noopener noreferrer"`. Instructions make no requests when expanded. The beta caveat remains; this is not fresh physical-TV acceptance.
+Dingo's ordinary filename remains `dingo-nuvio-collections-YYYY-MM-DD.json`; TV renaming is an explicit user step. Mobile and Desktop offer no evidenced file picker, direct URL input or Add/Merge selector. iOS is intentionally excluded from this accepted guide scope, despite upstream sideload distribution.
 
-Public-only help recheck, 2026-09-24: the [Nuvio account page](https://nuvio.tv/account) publicly served `page-470e4e54407a838f.js`, exposing JSON file import and Add as new/Merge/Overwrite modes. Its Merge description matched Collection IDs, corroborating the difference from Dingo's exact-visible-name merge. No authenticated navigation/import was performed during that check.
+Dingo's local exact-name Import/Merge, Nuvio.tv's ID-based Merge and Dingo's complete-profile Send remain separate operations. Send Review and **Merge instead** are unchanged. Selected Collection(s) JSON export remains a separate future capability.
+
+**Missing artwork or title details?** is one compact native disclosure beneath the four platform choices, shared by Export & Send and About & Credits. It starts collapsed, supports native keyboard activation, and retains its open state when returning from a platform page so chooser scroll/focus restoration remains stable. It uses the existing content scroller and modal host; no platform page repeats it.
+
+The advice says TMDB Enrichment **may help** artwork/title details, directs users to **Settings → Integrations → TMDB** in the **Nuvio app**, **where available**, and states that enrichment is optional and is not required to import Collections. The shared wording follows the existing TV source evidence and owner-confirmed Mobile/Desktop setting availability. It does not imply identical settings on the Nuvio.tv account website, guaranteed artwork recovery or a personal API-key requirement. The guide has no technical evidence/version/test-status footers; dated source observations and physical-testing limits remain in the internal evidence below.
+
+Nuvio.tv’s **Import modes** is a compact neutral reference panel with an even subtle border, a distinct background, smaller supporting text and separated mode entries. Mobile and Desktop explicitly direct users to copy their existing Nuvio Collections JSON and paste/save it safely in a note or file before using Dingo’s Copy JSON. Replacement and signed-in sync warnings are unchanged.
+
+### Upstream evidence and limits — 2026-10-11
+
+This guide is independently authored from contract facts, with no upstream implementation copied. The inspected app repositories are GPL-3.0. Current relevant upstream heads and the website account bundle were rechecked and unchanged from the investigation.
+
+- [NuvioTV 1.0.0 import ViewModel](https://github.com/NuvioMedia/NuvioTV/blob/9f17e8bf4abc799dc8c832d2894a8b3b166e4353/app/src/main/java/com/nuvio/tv/ui/screens/collection/CollectionManagementViewModel.kt) establishes ID replacement and the exact Downloads filename; [TV import UI](https://github.com/NuvioMedia/NuvioTV/blob/9f17e8bf4abc799dc8c832d2894a8b3b166e4353/app/src/main/java/com/nuvio/tv/ui/screens/collection/CollectionManagementScreen.kt) exposes File/URL and hides Paste. The same relevant behaviour was checked in 1.1.0-beta.5 (`6adf0251bd93a0600802483d770c015ba9904ed3`) and current dev (`96d311bcb3bebed4656cdc1aee41aa62debcb195`).
+- [NuvioMobile 0.5.9-beta import UI](https://github.com/NuvioMedia/NuvioMobile/blob/db0c50b503039863909c86405907462bf1752193/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/CollectionManagementScreen.kt) and [repository](https://github.com/NuvioMedia/NuvioMobile/blob/db0c50b503039863909c86405907462bf1752193/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/CollectionRepository.kt) establish paste import and full-list replacement; current `cmp-rewrite` head `ee3d915067362651e85dd6c959a92f147a77d110` retains those semantics.
+- [NuvioDesktop 0.1.29-alpha import UI](https://github.com/NuvioMedia/NuvioDesktop/blob/80d8ce33d802ca24e162464350b146fcbbdd12a9/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/CollectionManagementScreen.kt) and [repository](https://github.com/NuvioMedia/NuvioDesktop/blob/80d8ce33d802ca24e162464350b146fcbbdd12a9/composeApp/src/commonMain/kotlin/com/nuvio/app/features/collection/CollectionRepository.kt) separately establish the desktop paste/replacement contract; current Dev head `cc132db9bda6548ae9ef97aec1a3fff49c815637` retains it.
+- The public [Nuvio.tv account bundle](https://nuvio.tv/_next/static/chunks/app/account/page-efe10aad1b57ad07.js) and [Collection helpers](https://nuvio.tv/_next/static/chunks/5986-51dfffd532b4fe6c.js) establish file selection, the three import modes, ID matching and duplicate handling. These are dated public implementation observations, not authenticated account acceptance.
+
+Physical TV Downloads/storage/permission access remains an explicit owner test. Authenticated website import and physical Mobile/Desktop guest/signed-in sync combinations were not exercised. Browser fixture geometry and simulated Visual Viewport checks validate Dingo's presentation only. README/V1 retain adjacent stale beta/help wording; that separate interface is outside this change.
 
 ## Preparation, counts and delivery
 

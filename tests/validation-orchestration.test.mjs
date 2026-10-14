@@ -134,10 +134,48 @@ test("timing aggregates repeated phases and remains informational even for very 
 
 test("shared Export orchestration runs each local scenario once at the retained widths and propagates errors", async () => {
 	// Pure orchestration unit: no browser or external integration claim.
-	const widths = [], expressions = [];
-	const connection = { command: async (name, args) => { if (name === "Emulation.setDeviceMetricsOverride") widths.push(args.width); } };
-	const evaluate = async (_connection, expression) => { expressions.push(expression); return expression.includes("Ready") ? true : { expression }; };
+	const widths = [], expressions = [], commands = [];
+	const tabOrder = ["import-guide-back", "import-guide-close", "Choose your Nuvio platform", "web", "tv", "mobile", "desktop", "Missing artwork or title details?", "import-guide-back"];
+	const evaluations = [
+		["window.exportFixtureReady === true", true],
+		...["window.runExportScenario()", "window.runExportScenario()", "window.runExportScenario()",
+			"window.runExportEditorCases()", "window.runExportFeedbackCases()", "window.runExportWarningCases()", "window.runExportLargeCase()"]
+			.map((expression) => [expression, { expression }]),
+		["window.prepareExportCase()", undefined],
+		['document.querySelector("[data-action=open-import-guide]").focus()', undefined],
+		['new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))', undefined],
+		['(() => { const row = document.querySelector("[data-guide-platform=web]"); const heading = document.querySelector(".nuvio-guide-header h2"); return { forcedColours: matchMedia("(forced-colors: active)").matches, platform: document.querySelector("[data-import-platform]").dataset.importPlatform, focused: document.activeElement === heading, border: getComputedStyle(row).borderStyle, outline: getComputedStyle(heading).outlineStyle, contained: document.querySelector("[data-export-collections]").scrollWidth <= document.querySelector("[data-export-collections]").clientWidth + 1 }; })()',
+			{ forcedColours: true, platform: "chooser", focused: true, border: "solid", outline: "solid", contained: true }],
+		...tabOrder.map((focused) => ['document.activeElement.dataset.action || document.activeElement.dataset.guidePlatform || document.activeElement.getAttribute("aria-label") || document.activeElement.textContent', focused]),
+		...["controls.length - 1", "0"].flatMap((boundary) => [
+			["(() => { const controls = [...document.querySelector('[data-export-collections]').querySelectorAll('button, a[href], [tabindex]')].filter(element => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length); controls[" + boundary + "].focus(); })()", undefined],
+			['Boolean(document.activeElement.closest("[data-export-collections]"))', true],
+		]),
+		['document.activeElement === document.querySelector("[data-action=open-export-collections]") && !document.querySelector("[data-export-collections]") && document.body.style.position !== "fixed"', true],
+		["window.__mountedErrors", { expression: "window.__mountedErrors" }],
+	];
+	const connection = { command: async (name, args) => {
+		commands.push({ name, args });
+		if (name === "Emulation.setDeviceMetricsOverride") widths.push(args.width);
+	} };
+	const evaluate = async (_connection, expression) => {
+		const expected = evaluations[expressions.length];
+		assert.ok(expected, "Unexpected Export evaluation: " + expression);
+		assert.equal(expression, expected[0], "Export evaluations retain the expected order");
+		expressions.push(expression);
+		return expected[1];
+	};
 	const result = await runExportRegressions(connection, "http://127.0.0.1:1234", evaluate);
+	assert.deepEqual(expressions, evaluations.map(([expression]) => expression), "All scenario and keyboard evaluations run");
+	assert.deepEqual(commands.filter(({ name }) => name === "Emulation.setEmulatedMedia").map(({ args }) => args),
+		[{ features: [{ name: "forced-colors", value: "active" }] }, { features: [] }]);
+	assert.deepEqual(commands.filter(({ name }) => name === "Input.dispatchKeyEvent").map(({ args }) => [args.type, args.key, args.modifiers ?? 0]), [
+		["keyDown", "Enter", 0], ["keyUp", "Enter", 0],
+		...tabOrder.flatMap(() => [["keyDown", "Tab", 0], ["keyUp", "Tab", 0]]),
+		["keyDown", "Tab", 0], ["keyUp", "Tab", 0],
+		["keyDown", "Tab", 8], ["keyUp", "Tab", 0],
+		["keyDown", "Escape", 0], ["keyUp", "Escape", 0],
+	], "Shared Export helper opens, tabs, wraps both ways and dismisses the guide");
 	assert.deepEqual(widths, [393, 900, 1280]);
 	assert.equal(expressions.filter((value) => value === "window.runExportScenario()").length, 3);
 	for (const name of ["EditorCases", "FeedbackCases", "WarningCases", "LargeCase"]) {

@@ -1,0 +1,37 @@
+.export-collections-dialog.is-import-guide, .about-credits-dialog.is-import-guide { grid-template-rows: auto minmax(0, 1fr); min-height: 0; max-height: 100%; }
+.nuvio-guide-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.nuvio-guide-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.nuvio-guide-header h2 { margin: 0; font-size: 1.25rem; line-height: 1.3; overflow-wrap: anywhere; }
+.nuvio-guide-header button, button.nuvio-guide-entry, .nuvio-guide-platforms button { min-height: 44px; min-width: 0; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: 10px; font: inherit; color: var(--text); background: var(--elevated); cursor: pointer; }
+.nuvio-guide-header button:hover, button.nuvio-guide-entry:hover, .nuvio-guide-platforms button:hover { background: var(--elevated-hover); }
+button.nuvio-guide-entry, .nuvio-guide-platforms button { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; width: 100%; }
+button.nuvio-guide-entry { background: var(--panel); border-color: var(--border); }
+.nuvio-guide-entry strong, .nuvio-guide-platforms strong { display: block; font-size: .92rem; line-height: 1.4; }
+.nuvio-guide-entry small, .nuvio-guide-platforms small { display: block; margin-top: 5px; color: var(--muted); font-size: .8rem; font-weight: 400; line-height: 1.45; }
+.nuvio-guide-content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 20px; scroll-padding-block: 12px; overflow-wrap: anywhere; font-size: .9rem; line-height: 1.6; }
+.nuvio-guide-content p { margin: 0; }
+.nuvio-guide-content h3 { margin: 0 0 8px; font-size: 1rem; line-height: 1.4; }
+.nuvio-guide-platforms { display: grid; gap: 10px; margin-top: 16px; }
+.nuvio-guide-consequence { padding: 14px; border: 1px solid var(--amber); border-radius: 10px; background: rgb(224 177 103 / 7%); }
+.nuvio-guide-steps { margin: 20px 0; padding-left: 24px; }
+.nuvio-guide-steps li { padding-left: 3px; }
+.nuvio-guide-steps li + li { margin-top: 12px; }
+.nuvio-guide-section { margin-top: 20px; }
+.nuvio-guide-section p + p { margin-top: 10px; }
+.nuvio-guide-section dl { display: grid; gap: 14px; margin: 0; }
+.nuvio-guide-section dt { font-weight: 700; }
+.nuvio-guide-section dd { margin: 3px 0 0; }
+.nuvio-guide-section summary { min-height: 44px; align-content: center; cursor: pointer; font-weight: 700; }
+.nuvio-guide-reference { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.nuvio-guide-content .nuvio-guide-reference h3 { margin-bottom: 12px; font-size: .94rem; }
+.nuvio-guide-reference dl { gap: 0; }
+.nuvio-guide-reference dl > div + div { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.nuvio-guide-reference dt { font-size: .9rem; }
+.nuvio-guide-reference dd { color: var(--muted); font-size: .84rem; }
+.nuvio-guide-content a { color: var(--cyan-bright); text-decoration: underline; text-underline-offset: 3px; }
+.nuvio-guide-header :focus-visible, .nuvio-guide-content :focus-visible, .nuvio-guide-content:focus-visible, .nuvio-guide-entry:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 3px; }
+@media (max-width: 599px) { .nuvio-guide-header { padding: 12px 14px; } .nuvio-guide-content { padding: 14px; } }
+@media (forced-colors: active) {
+	.nuvio-guide-reference, .nuvio-guide-reference dl > div + div, .nuvio-guide-consequence, .nuvio-guide-header button, button.nuvio-guide-entry, .nuvio-guide-platforms button { border-color: ButtonText; }
+	.nuvio-guide-header :focus-visible, .nuvio-guide-content :focus-visible, .nuvio-guide-content:focus-visible, .nuvio-guide-entry:focus-visible { outline-color: Highlight; }
+}
