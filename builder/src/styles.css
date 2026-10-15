@@ -3912,6 +3912,7 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .source-heading {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: flex-start;
 	justify-content: space-between;
 	gap: 9px;
@@ -3919,6 +3920,8 @@ body.hierarchy-pointer-dragging .builder-shell {
 
 .source-category {
 	flex: 0 0 auto;
+	max-width: 100%;
+	overflow-wrap: anywhere;
 	padding: 3px 6px;
 	color: var(--cyan-bright);
 	font-size: 0.59rem;

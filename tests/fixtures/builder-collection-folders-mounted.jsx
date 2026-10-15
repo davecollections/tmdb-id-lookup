@@ -4,10 +4,13 @@ import { PeopleReviewStep } from "../../builder/src/ui/PeopleSourceFlow.jsx";
 import { createRoot } from "react-dom/client";
 import { createBuilderController } from "../../builder/src/application/index.js";
 import { BuilderWorkspace } from "../../builder/src/ui/BuilderWorkspace.jsx";
-import { collectionViewModels } from "../../builder/src/ui/view-model.js";
+import { buildBuilderViewModel, collectionViewModels } from "../../builder/src/ui/view-model.js";
 import { buildGenreSourceDrafts } from "../../builder/src/source-add/index.js";
 import { loadFolderArtworkSuggestions } from "../../builder/src/folder-artwork-suggestions.js";
 import importedPeople from "../../manual-tests/nuvio-clients/issue-74-builder-add-people/results/nuvio-desktop-immediate-export.json";
+
+import importedSourceEditing from "../../manual-tests/nuvio-clients/issue-78-source-editing/source-edit-input.json";
+import importedTraktFoundation from "../../manual-tests/native-trakt-foundation/owner-review.json";
 
 const frame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 const assert = (value, message) => { if (!value) throw new Error(message); };
@@ -349,7 +352,7 @@ window.prepareCollectionSortPresentation = async (people) => {
 	return window.measureCollectionSortPresentation(people);
 };
 window.measureCollectionSortPresentation = (people, { hierarchyOrdering = false } = {}) => {
-	const layout = measure({ wholePageContainment: !hierarchyOrdering });
+	const layout = measure();
 	const dialog = modal();
 	const rect = dialog.getBoundingClientRect();
 	const viewport = window.visualViewport;
@@ -559,6 +562,85 @@ function orderingProject() {
 		id:"order-c"+c,title,pinToTop:c%2===1,folders:["Zulu","Alpha","Beta"].map((name,f)=>({id:"order-f"+c+"-"+f,title:name,sources:["2020s","1950s","2000s","1960s"].map((year,s)=>({provider:"preserved-ordering-fixture",title:year,retained:{c,f,s}}))})),
 	}));
 }
+// #275 exercises local authored Source cards; no external service is invoked.
+function sourceBadgeProject() {
+	const examples = [
+		orderingProject()[0].folders[0].sources[0],
+		importedSourceEditing[0].folders[0].sources.find(source => source.provider === "tmdb"),
+		importedSourceEditing[0].folders[0].sources.find(source => source.provider === "addon"),
+		importedTraktFoundation[0].folders[0].sources[0],
+	];
+	const titles = ["2020s", "Movies", "A", "TV"];
+	const sources = examples.map((source, index) => ({ ...source, id: "badge-short-" + index, title: titles[index] }));
+	sources.push(...examples.map((source, index) => ({ ...source, id: "badge-long-" + index, title: "A longer locally authored Source title with several meaningful words " + index })));
+	return [{ id: "badge-collection", title: "Local layout review", folders: [{ id: "badge-folder", title: "Source category presentation", sources }] }];
+}
+let sourceBadgeOpening;
+window.prepareSourceBadgeReflow = async () => {
+	const collection = await mount(sourceBadgeProject());
+	controller.selectNode(collection.folders[0].sources[0].internalId);
+	await document.fonts.ready; await frame(); window.scrollTo(0, 0); await frame();
+	sourceBadgeOpening = controller.getState();
+	return window.measureSourceBadgeReflow();
+};
+window.measureSourceBadgeReflow = () => {
+	const failures = [], check = (condition, message) => { if (!condition) failures.push(message); };
+	const rect = element => { const {left,right,top,bottom,width,height} = element.getBoundingClientRect(); return {left,right,top,bottom,width,height}; };
+	const fragments = element => { const range = document.createRange(); range.selectNodeContents(element); return [...range.getClientRects()].filter(r => r.width && r.height).map(({left,right,top,bottom,width,height}) => ({left,right,top,bottom,width,height})); };
+	const contains = (outer, inner) => inner.left >= outer.left - 1 && inner.right <= outer.right + 1 && inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1;
+	const overlaps = (a, b) => Math.min(a.right,b.right) > Math.max(a.left,b.left) + .5 && Math.min(a.bottom,b.bottom) > Math.max(a.top,b.top) + .5;
+	const state = controller.getState(), models = buildBuilderViewModel(state).sources;
+	const cards = $$(".source-card").map((card, index) => {
+		const heading = card.querySelector(".source-heading"), title = heading.querySelector(".node-title"), badge = heading.querySelector(".source-category");
+		const cardBox = rect(card), headingBox = rect(heading), titleBox = rect(title), badgeBox = rect(badge), titleText = fragments(title), badgeText = fragments(badge);
+		// Range includes lines hidden by the existing two-line clamp. Intersect both axes.
+		const paintedTitle = titleText.map(t => ({left:Math.max(t.left,titleBox.left),right:Math.min(t.right,titleBox.right),top:Math.max(t.top,titleBox.top),bottom:Math.min(t.bottom,titleBox.bottom)})).filter(t => t.right > t.left && t.bottom > t.top);
+		const probe = title.cloneNode(true);
+		Object.assign(probe.style, {position:"fixed",visibility:"hidden",display:"block",width:"max-content",maxWidth:"none",whiteSpace:"nowrap",webkitLineClamp:"unset"});
+		title.parentElement.append(probe); const intrinsicTitleWidth = rect(probe).width; probe.remove();
+		const targets = [...card.querySelectorAll("button")].filter(element => element.getClientRects().length).map(element => ({action:element.dataset.action ?? "select-source",...rect(element)}));
+		const neighbours = [rect(card.querySelector(".source-order")), ...targets.filter(t => t.action !== "select-source"), ...[...card.querySelectorAll(".node-meta")].map(rect)];
+		check(contains(cardBox, badgeBox) && contains(headingBox, badgeBox), "Badge stays inside card and heading: " + index);
+		check(badgeText.length > 0 && badgeText.every(t => contains(badgeBox,t)), "Complete rendered badge text fits: " + index);
+		check(!paintedTitle.some(t => badgeText.some(b => overlaps(t,b))) && !badgeText.some(b => neighbours.some(n => overlaps(b,n))), "Badge text does not collide with title, metadata or controls: " + index);
+		check(titleBox.width >= Math.min(intrinsicTitleWidth,headingBox.width) - 1 && paintedTitle.length > 0, "Title retains usable available width: " + index);
+		if (index < 4) check(title.scrollWidth <= title.clientWidth + 1 && title.scrollHeight <= title.clientHeight + 1, "Short title is fully visible: " + index);
+		check(title.textContent === models[index].title && badge.textContent === models[index].categoryLabel, "Full production title/category wording is preserved: " + index);
+		check(targets.every(t => t.width >= 44 && t.height >= 44), "Visible card targets remain at least 44px: " + index);
+		const css = getComputedStyle(badge), headingCss = getComputedStyle(heading);
+		check(css.textOverflow !== "ellipsis" && !["hidden","clip"].includes(css.overflowX) && parseFloat(css.fontSize) > 0, "Category is not hidden, clipped or ellipsized: " + index);
+		if (index < 4 && headingCss.flexDirection === "row" && intrinsicTitleWidth + badgeBox.width + parseFloat(headingCss.columnGap) <= headingBox.width - 1) {
+			check(Math.abs(titleBox.top-badgeBox.top) < 1, "Title and badge share a row when both fit: " + index);
+		}
+		return {title:title.textContent,label:badge.textContent,category:models[index].category,selected:card.querySelector(".source-button").getAttribute("aria-pressed"),card:cardBox,heading:headingBox,titleBox,intrinsicTitleWidth,badge:badgeBox,badgeText,titleText,fontSize:css.fontSize,targets};
+	});
+	const doc = document.documentElement, body = document.body, workspace = $(".workspace"), workspaceBox = rect(workspace);
+	check(cards.length === 8 && new Set(cards.map(card => card.category)).size === 4, "All four categories have short and long title cases");
+	check(doc.scrollWidth <= doc.clientWidth + 1 && body.scrollWidth <= body.clientWidth + 1, "Document and body do not overflow horizontally");
+	check(workspace.scrollWidth <= workspace.clientWidth + 1 && workspaceBox.left >= -1 && workspaceBox.right <= doc.clientWidth + 1, "Workspace stays contained");
+	check(state.project === sourceBadgeOpening.project && state.revision === sourceBadgeOpening.revision, "Presentation preserves exact project and revision");
+	check(fetches.length === 0, "Local Source presentation makes no service requests");
+	return {width:innerWidth,height:innerHeight,rootFontSize:getComputedStyle(doc).fontSize,document:{client:doc.clientWidth,scroll:doc.scrollWidth},body:{client:body.clientWidth,scroll:body.scrollWidth},workspace:workspaceBox,cards,failures};
+};
+window.checkSourceBadgeSelection = () => {
+	const state = controller.getState();
+	assert(state.project === sourceBadgeOpening.project && state.revision === sourceBadgeOpening.revision, "Selection preserves project data");
+	assert($$(".source-button")[1].getAttribute("aria-pressed") === "true", "Keyboard selects the intended Source");
+	assert($$(".source-button").filter(element => element.getAttribute("aria-pressed") === "true").length === 1, "Selected/unselected states remain distinct");
+	return true;
+};
+window.beginSourceBadgeReorder = () => {
+	beforeDrag = controller.getState();
+	$$('[data-action="reorder-source"]')[1].focus();
+};
+window.finishSourceBadgeReorder = async () => {
+	await window.finishSourceOrderingDrag();
+	const before = beforeDrag.project.collections[0].folders[0].sources, after = controller.getState().project.collections[0].folders[0].sources;
+	assert(after.every((source,index) => source === before[index < 2 ? 1-index : index]), "Reorder preserves every Source object and its metadata");
+	assert(document.activeElement.dataset.action === "reorder-source" && document.activeElement.dataset.keyboardReordering !== "true", "Keyboard reorder ends on its handle");
+	return true;
+};
+
 window.prepareHierarchyOrdering = async (level="collections") => {
 	const collection=await mount(orderingProject());
 	controller.selectNode(collection.folders[0].sources[0].internalId); await frame();
@@ -644,9 +726,8 @@ function measureHierarchyOrdering({ sortEnabled = true } = {}) {
 	const rootFontSize=getComputedStyle(document.documentElement).fontSize, enlargedText=parseFloat(rootFontSize)>16;
 	const documentOverflowPx=Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth);
 	const bodyOverflowPx=Math.max(0,document.body.scrollWidth-document.body.clientWidth);
-	// Ordinary page containment is unchanged. Enlarged #273 acceptance owns headers,
-	// Sort and menus; other document overflow remains visible as diagnostic evidence.
-	if(!enlargedText) assert(document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,"Hierarchy page has no horizontal overflow");
+	// #275 closes the former enlarged-text Source-badge overflow exception.
+	assert(documentOverflowPx<=1 && bodyOverflowPx<=1,"Hierarchy page and body have no horizontal overflow at either text size");
 	assert(!window.orderingExpectedWidth || innerWidth<=window.orderingExpectedWidth+1,"Mobile layout viewport must not expand to conceal overflow");
 	const headers=$$(".panel-header").filter(el=>el.getClientRects().length), headerWidths=[];
 	for(const header of headers){

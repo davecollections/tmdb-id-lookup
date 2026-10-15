@@ -46,6 +46,80 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		assert.equal(await evaluate(connection,"window.isOrderingMenuTriggerFocused()"),true,"Enlarged menu Escape restores its exact trigger element");
 		return {...menu,reached};
 	}
+	const sourceBadges = {layouts:[],keyboard:[],drag:[],fonts:[],externalRequests:[]};
+	const stopBadgeRequests = connection.onEvent(({method,params}) => {
+		if (method === "Network.requestWillBeSent" && /^https?:/.test(params.request.url) && new URL(params.request.url).hostname !== "127.0.0.1") sourceBadges.externalRequests.push(params.request.url);
+	});
+	try {
+		const fonts = [{name:"Inter",family:"Inter",mono:""}];
+		const fontDirectory = process.env.BUILDER_REFLOW_FONT_DIR ?? (process.platform === "linux" ? "/usr/share/fonts/truetype/dejavu" : null);
+		if (fontDirectory) {
+			for (const [file,family,weight] of [["DejaVuSans.ttf","ReflowDejaVu","400"],["DejaVuSans-Bold.ttf","ReflowDejaVu","700"],["DejaVuSansMono.ttf","ReflowDejaVuMono","400"]]) {
+				const data = (await fs.readFile(path.join(fontDirectory,file))).toString("base64");
+				await evaluate(connection, `(async()=>{const face=new FontFace(${JSON.stringify(family)},"url(data:font/ttf;base64,${data})",{weight:${JSON.stringify(weight)}});document.fonts.add(await face.load());})()`);
+			}
+			fonts.push({name:"DejaVu",family:"ReflowDejaVu",mono:"ReflowDejaVuMono"});
+		}
+		await connection.command("Emulation.setTouchEmulationEnabled", {enabled:false});
+		for (const font of fonts) {
+			await evaluate(connection, 'document.documentElement.style.fontFamily=' + JSON.stringify(font.family));
+			await evaluate(connection, `(()=>{let style=document.getElementById("source-badge-test-font");if(!style){style=document.createElement("style");style.id="source-badge-test-font";document.head.append(style);}style.textContent=${JSON.stringify(font.mono ? '.source-order {font-family:'+font.mono+';}' : '')};})()`);
+			for (const width of [360,384,393,412,900,901,1023,1024,1025,1079,1080,1280]) for (const enlarged of [false,true]) {
+				for (const forced of enlarged && [393,1024].includes(width) ? [false,true] : [false]) {
+					await viewport(width);
+					await connection.command("Emulation.setEmulatedMedia", {features:[{name:"forced-colors",value:forced ? "active" : "none"},{name:"prefers-reduced-motion",value:"reduce"}]});
+					await evaluate(connection, 'document.documentElement.style.fontSize=' + JSON.stringify(enlarged ? "200%" : ""));
+					const layout = await evaluate(connection, "window.prepareSourceBadgeReflow()");
+					assert.equal(layout.width,width); assert.equal(layout.rootFontSize,enlarged ? "32px" : "16px");
+					assert.deepEqual(layout.failures,[],"Source badge reflow "+JSON.stringify({font:font.name,width,enlarged,forced,layout}));
+					const tree = await connection.command("Accessibility.getFullAXTree");
+					const names = tree.nodes.filter(node => !node.ignored && node.role?.value === "button").map(node => (node.name?.value ?? "").toLowerCase());
+					assert.ok(layout.cards.every(card => names.some(name => name.includes(card.title.toLowerCase()) && name.includes(card.label.toLowerCase()))),"Full Source title and category accessible names");
+					const evidence = {font:font.name,width,enlarged,forced,...layout};
+					sourceBadges.layouts.push(evidence);
+					if (width === 1024 && enlarged && !forced) console.log("Source badge 200%: "+JSON.stringify({platform:process.platform,font:font.name,width,rootFontSize:layout.rootFontSize,document:layout.document,first:layout.cards[0]}));
+					if ([393,1024].includes(width)) await capture("source-badges-"+font.name+"-"+width+(enlarged?"-200pct":"")+(forced?"-forced":""));
+					if (enlarged && [393,1024].includes(width)) {
+						await evaluate(connection, 'document.querySelectorAll("[data-action=reorder-source]")[1].focus()');
+						await key("Tab","Tab",9);
+						const focus = await evaluate(connection, '(()=>{const e=document.activeElement,s=getComputedStyle(e);return {source:e.classList.contains("source-button"),visible:e.matches(":focus-visible"),outline:s.outlineStyle,width:parseFloat(s.outlineWidth)};})()');
+						assert.ok(focus.source && focus.visible && focus.outline !== "none" && focus.width >= 2,"Source keyboard focus remains visible");
+						await key("Enter","Enter",13);
+						assert.equal(await evaluate(connection,"window.checkSourceBadgeSelection()"),true);
+						await capture("source-badges-focus-"+font.name+"-"+width+(forced?"-forced":""));
+						await evaluate(connection,"window.beginSourceBadgeReorder()");
+						await key("Enter","Enter",13); await key("ArrowUp","ArrowUp",38); await key("Enter","Enter",13);
+						assert.equal(await evaluate(connection,"window.finishSourceBadgeReorder()"),true);
+						sourceBadges.keyboard.push({font:font.name,width,forced,focus,passed:true});
+					}
+				}
+			}
+			sourceBadges.fonts.push(font.name);
+			await connection.command("Emulation.setEmulatedMedia",{features:[]});
+			await evaluate(connection,'document.documentElement.style.fontSize="200%"');
+			for (const width of [393,1024]) {
+				await viewport(width,1000); await evaluate(connection,"window.prepareSourceOrderingDrag()");
+				await evaluate(connection,'document.querySelector("[data-action=reorder-source]").scrollIntoView({block:"center"})'); await frame();
+				const handles=await evaluate(connection,'[...document.querySelectorAll("[data-action=reorder-source]")].slice(0,2).map(e=>{const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})');
+				await connection.command("Input.dispatchMouseEvent",{type:"mouseMoved",...handles[0]});
+				await connection.command("Input.dispatchMouseEvent",{type:"mousePressed",button:"left",buttons:1,clickCount:1,...handles[0]});
+				for(let step=1;step<=8;step++) await connection.command("Input.dispatchMouseEvent",{type:"mouseMoved",button:"left",buttons:1,x:handles[0].x,y:handles[0].y+(handles[1].y-8-handles[0].y)*step/8});
+				await connection.command("Input.dispatchMouseEvent",{type:"mouseReleased",button:"left",buttons:0,clickCount:1,x:handles[1].x,y:handles[1].y-8});
+				assert.equal(await evaluate(connection,"window.finishSourceOrderingDrag()"),true);
+				sourceBadges.drag.push({font:font.name,width,passed:true});
+			}
+		}
+		assert.deepEqual(sourceBadges.externalRequests,[],"Local badge layout requires zero external service requests");
+		if (screenshots) await fs.writeFile(path.join(screenshots,"source-badge-evidence.json"),JSON.stringify(sourceBadges,null,2)+"\n");
+	} finally {
+		stopBadgeRequests();
+		await evaluate(connection,'document.documentElement.style.fontFamily="";document.documentElement.style.fontSize="";document.getElementById("source-badge-test-font")?.remove()');
+		await connection.command("Emulation.setEmulatedMedia",{features:[]});
+		await connection.command("Input.dispatchMouseEvent",{type:"mouseMoved",x:0,y:0});
+	}
+	// Keep successful CI summaries compact; full geometry is in optional private evidence.
+	sourceBadges.layouts = sourceBadges.layouts.map(({font,width,enlarged,forced,rootFontSize,document}) => ({font,width,enlarged,forced,rootFontSize,document}));
+
 	const pinnedCollections = { layouts: [], menus: [], touch: [], clicks: [], updates: [], externalRequests: [] };
 	const pinGeometryEvidence = [];
 	const stopPinRequests = connection.onEvent(({ method, params }) => {
@@ -307,5 +381,5 @@ export async function runHierarchyOrderingChecks(connection, baseUrl, evaluate) 
 		await new Promise(resolve=>setTimeout(resolve,50));
 	}
 	await viewport(1280,900);
-	return {layouts,actions,enlargedChecks,ordinaryMenus,shortMenu,reducedMenu,headerLayouts,pinnedCollections,errors};
+	return {layouts,actions,enlargedChecks,ordinaryMenus,shortMenu,reducedMenu,headerLayouts,pinnedCollections,sourceBadges,errors};
 }
