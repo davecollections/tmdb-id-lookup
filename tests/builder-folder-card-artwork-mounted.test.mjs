@@ -16,6 +16,7 @@ import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
+	createMountedBrowserDiagnostics,
 	createBoundedStderrCapture,
 	createBrowserProcessTree,
 	resolveDevToolsStartupTimeout,
@@ -72,7 +73,8 @@ async function evaluate(connection, expression) {
 }
 
 async function runMountedPage() {
-	const timing = createValidationTiming("Artwork browser");
+	const diagnostics = createMountedBrowserDiagnostics({ suite: "Artwork", resources: () => resources });
+	const timing = createValidationTiming("Artwork browser", { onStage: label => { if (label !== "Browser cleanup") diagnostics.scenario(label); } });
 	const devToolsStartupMs = resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS);
 	const resources = {
 		artworkRequests: [],
@@ -181,6 +183,7 @@ async function runMountedPage() {
 
 		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-folder-artwork-mounted-"));
 		resources.browserExecutable = chromeExecutable();
+		diagnostics.stage("chrome-launch");
 		resources.browserProcess = spawn(resources.browserExecutable, [
 			"--headless=new",
 			"--disable-background-networking",
@@ -200,37 +203,27 @@ async function runMountedPage() {
 			windowsHide: true,
 		});
 		resources.browserStderrCapture = createBoundedStderrCapture(resources.browserProcess.stderr);
-		try {
-			await new Promise((resolve, reject) => {
-				resources.browserProcess.once("spawn", resolve);
-				resources.browserProcess.once("error", reject);
-			});
-		} catch (error) {
-			resources.browserStderrCapture.stop();
-			resources.browserStderrCapture = null;
-			throw error;
-		}
+		await new Promise((resolve, reject) => {
+			resources.browserProcess.once("spawn", resolve);
+			resources.browserProcess.once("error", reject);
+		});
 		resources.processTree = createBrowserProcessTree({ rootPid: resources.browserProcess.pid });
 
-		let endpoint;
-		try {
-			endpoint = await waitForDevToolsEndpoint({
-				profileDir: resources.profileDir,
-				browserProcess: resources.browserProcess,
-				browserExecutable: resources.browserExecutable,
-				stderrCapture: resources.browserStderrCapture,
-				timeoutMs: devToolsStartupMs,
-			});
-		} finally {
-			resources.browserStderrCapture.stop();
-			resources.browserStderrCapture = null;
-		}
+		const endpoint = await waitForDevToolsEndpoint({
+			profileDir: resources.profileDir,
+			browserProcess: resources.browserProcess,
+			browserExecutable: resources.browserExecutable,
+			stderrCapture: resources.browserStderrCapture,
+			diagnostics,
+			timeoutMs: devToolsStartupMs,
+		});
 		resources.debugPort = endpoint.port;
-		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl);
+		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl, { diagnostics, connectionType: "browser" });
+		diagnostics.stage("page-target-discovery");
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 30000 });
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 30000, diagnostics, connectionType: "page" });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
 		const address = resources.vite.httpServer.address();
@@ -452,7 +445,7 @@ async function runMountedPage() {
 	}, async () => {
 		timing.stage("Browser cleanup");
 		try {
-			const cleanupReport = await cleanupMountedBrowser(resources);
+			const cleanupReport = await cleanupMountedBrowser(resources, { diagnostics });
 			if (resources.artworkServer?.listening) {
 				await new Promise((resolve, reject) => resources.artworkServer.close((error) => (error ? reject(error) : resolve())));
 			}
@@ -460,7 +453,7 @@ async function runMountedPage() {
 		} finally {
 			timing.finish();
 		}
-	});
+	}, diagnostics);
 
 	if (execution.cleanupReport.browser.fallback === "succeeded") {
 		console.warn(`Mounted Folder artwork browser required process-tree fallback: ${execution.cleanupReport.browser.gracefulError?.message ?? "unknown error"}`);

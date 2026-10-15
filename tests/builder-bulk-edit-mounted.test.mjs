@@ -24,6 +24,7 @@ import { mountedReactOptimizeDeps } from "./helpers/mounted-react-vite.mjs";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
+	createMountedBrowserDiagnostics,
 	createBoundedStderrCapture,
 	createBrowserProcessTree,
 	resolveDevToolsStartupTimeout,
@@ -343,7 +344,8 @@ async function runNuvioImportChecks(connection, origin) {
 }
 
 async function runMountedPage() {
-	const timing = createValidationTiming("Workspace browser");
+	const diagnostics = createMountedBrowserDiagnostics({ suite: "Workspace", resources: () => resources });
+	const timing = createValidationTiming("Workspace browser", { onStage: label => { if (label !== "Browser cleanup") diagnostics.scenario(label); } });
 	const resources = {
 		browserExecutable: null,
 		browserProcess: null,
@@ -393,6 +395,7 @@ async function runMountedPage() {
 
 		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-bulk-edit-mounted-"));
 		resources.browserExecutable = chromeExecutable();
+		diagnostics.stage("chrome-launch");
 		resources.browserProcess = spawn(resources.browserExecutable, [
 			"--headless=new",
 			"--disable-background-networking",
@@ -423,15 +426,15 @@ async function runMountedPage() {
 			browserProcess: resources.browserProcess,
 			browserExecutable: resources.browserExecutable,
 			stderrCapture: resources.browserStderrCapture,
+			diagnostics,
 			timeoutMs: resolveDevToolsStartupTimeout(process.env.DEVTOOLS_STARTUP_MS),
 		});
-		resources.browserStderrCapture.stop();
-		resources.browserStderrCapture = null;
-		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl);
+		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl, { diagnostics, connectionType: "browser" });
+		diagnostics.stage("page-target-discovery");
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 30000 });
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 30000, diagnostics, connectionType: "page" });
 		const fixtureErrors = [];
 		const externalRequests = [];
 		let checkingCollectionLayout = false;
@@ -696,6 +699,7 @@ async function runMountedPage() {
 		timing.stage("Browser cleanup");
 		try {
 			return await cleanupMountedBrowser({
+				browserStderrCapture: resources.browserStderrCapture,
 				browserExecutable: resources.browserExecutable,
 				browserProcess: resources.browserProcess,
 				browserConnection: resources.browserConnection,
@@ -704,11 +708,11 @@ async function runMountedPage() {
 				profileDir: resources.profileDir,
 				vite: resources.vite,
 				viteCacheDir: resources.viteCacheDir,
-			});
+			}, { diagnostics });
 		} finally {
 			timing.finish();
 		}
-	});
+	}, diagnostics);
 	return execution.value;
 }
 

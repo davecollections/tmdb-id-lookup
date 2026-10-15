@@ -18,6 +18,7 @@ import {
 	cleanupMountedBrowser,
 	connectDevTools,
 	createBoundedStderrCapture,
+	createMountedBrowserDiagnostics,
 	createBrowserProcessTree,
 	removeDirectoryWithRetry,
 	resolveDevToolsStartupTimeout,
@@ -232,7 +233,7 @@ test("DevTools readiness reports Chrome exit state and bounded stderr instead of
 	}), (error) => {
 		assert.match(error.message, /Chrome exited before publishing.*rootPid=654, exitCode=23, signalCode=none/u);
 		assert.match(error.message, /executable="\/usr\/bin\/google-chrome"/u);
-		assert.match(error.message, /chromeStderr="zygote initialization failed"/u);
+		assert.match(error.message, /chromeStderr=.*message-omitted/u);
 		assert.doesNotMatch(error.message, /within \d+ ms/u);
 		return true;
 	});
@@ -273,7 +274,7 @@ test("DevTools timeout includes a deterministic bounded Chrome profile inventory
 	}), (error) => {
 		assert.match(error.message, /within 20 ms.*rootPid=988.*lastState=DevToolsActivePort has not been created/u);
 		assert.match(error.message, /executable="\/usr\/bin\/google-chrome"/u);
-		assert.match(error.message, /chromeStderr="<none captured>"/u);
+		assert.match(error.message, /chromeStderr=\[\]/u);
 		assert.match(error.message, /profileEntries=\["entry-00","entry-01"/u);
 		assert.match(error.message, /"entry-49"\]; profileEntriesOmitted=5/u);
 		assert.doesNotMatch(error.message, /entry-50/u);
@@ -935,4 +936,225 @@ test("abortable delays clear their timer and listener when cancelled", async () 
 	controller.abort();
 	await assert.rejects(delayed, (error) => error.code === "ABORT_ERR");
 	assert.equal(timers.active.size, 0);
+});
+
+function diagnosticFixture(options = {}) {
+	const records = [];
+	let time = 0;
+	const resources = { browserProcess: fakeChild(123), profileDir: "private-profile", ...options.resources };
+	const diagnostics = createMountedBrowserDiagnostics({ suite: "unit-suite", resources: () => resources,
+		now: () => time, log: line => records.push(JSON.parse(line.slice("MOUNTED_BROWSER_DIAGNOSTIC ".length))), ...Object.fromEntries(Object.entries(options).filter(([key]) => key !== "resources")) });
+	return { diagnostics, records, resources, advance(ms) { time += ms; }, now: () => time };
+}
+
+async function diagnosticSocket(fixture, { connectionType = "page", opens = true } = {}) {
+	const timers = new Map();
+	let nextTimer = 0, socket;
+	class ControlledSocket extends EventTarget {
+		constructor() {
+			super(); socket = this; this.readyState = 0; this.sent = [];
+			if (opens) queueMicrotask(() => { this.readyState = 1; this.dispatchEvent(new Event("open")); });
+		}
+		send(text) { this.sent.push(JSON.parse(text)); }
+		reply(id, result = {}) { this.dispatchEvent(new MessageEvent("message", { data: JSON.stringify({ id, result }) })); }
+		close() { this.readyState = 3; this.dispatchEvent(new Event("close")); }
+	}
+	const opening = connectDevTools("ws://private.invalid/secret?token=DO_NOT_LOG", {
+		WebSocketImpl: ControlledSocket, diagnostics: fixture.diagnostics, connectionType, now: fixture.now,
+		timeoutMs: 5000, commandTimeoutMs: 120000,
+		setTimeoutFn(callback, delay) { const id = ++nextTimer; timers.set(id, { callback, delay }); return id; },
+		clearTimeoutFn(id) { timers.delete(id); },
+	});
+	if (!opens) { [...timers.values()][0].callback(); return opening; }
+	return { connection: await opening, socket, timers };
+}
+
+const successfulCleanup = () => ({ rootPid: 123, browser: { graceful: "succeeded", fallback: "not-used", ownedPids: [123], remainingPids: [] }, profile: { retries: 0 }, viteCache: { retries: 0 } });
+
+test("diagnostics distinguish endpoint failure and report cleanup without masking startup", async () => {
+	const f = diagnosticFixture();
+	let time = 0, original;
+	await assert.rejects(runWithLifecycleCleanup(async () => {
+		try {
+			await waitForDevToolsEndpoint({ profileDir: "unit-profile", browserProcess: f.resources.browserProcess, diagnostics: f.diagnostics,
+				timeoutMs: 10, pollIntervalMs: 5, now: () => time, delay: async ms => { time += ms; f.advance(ms); },
+				fsApi: { readFile: async () => { throw missingError(); }, readdir: async () => [] } });
+		} catch (error) { original = error; throw error; }
+	}, successfulCleanup, f.diagnostics), error => error === original && /within 10 ms/.test(error.message));
+	const failure = f.records.find(r => r.event === "failure-snapshot");
+	assert.equal(failure.phase, "endpoint-publication");
+	assert.equal(failure.browser.state, "running");
+	assert.equal(failure.browser.rootPid, 123);
+	assert.equal(failure.elapsedMs, 10);
+	assert.equal(f.records.at(-1).cleanup.outcome, "succeeded");
+	assert.equal(f.records.at(-1).cleanup.rootPid, 123);
+});
+
+for (const connectionType of ["browser", "page"]) {
+	test(`diagnostics distinguish ${connectionType} WebSocket timeout without exposing its URL`, async () => {
+		const f = diagnosticFixture();
+		await assert.rejects(runWithLifecycleCleanup(() => diagnosticSocket(f, { connectionType, opens: false }), successfulCleanup, f.diagnostics), /within 5000 ms/);
+		assert.equal(f.records.find(r => r.event === "failure-snapshot").phase, `${connectionType}-websocket`);
+		assert.doesNotMatch(JSON.stringify(f.records), /private.invalid|DO_NOT_LOG|token=/);
+	});
+}
+
+test("pending command failure retains IDs, ages, original scenario and all outstanding counts", async () => {
+	const f = diagnosticFixture();
+	const { connection, socket, timers } = await diagnosticSocket(f);
+	connection.scenario("imported-discover", { enlargedText: true });
+	const viewport = connection.command("Emulation.setDeviceMetricsOverride", { width: 393, height: 852, mobile: true, deviceScaleFactor: 1 });
+	socket.reply(1); await viewport;
+	const commands = [];
+	for (let i = 0; i < 20; i++) commands.push(connection.command("Runtime.evaluate", { expression: "DO_NOT_LOG_APPLICATION_DATA", requestBody: "PRIVATE_REQUEST", url: "https://private.invalid/secret" }));
+	const outcomes = Promise.allSettled(commands);
+	connection.scenario("later-scenario");
+	f.advance(120000);
+	assert.equal([...timers.values()][0].delay, 120000);
+	[...timers.values()][0].callback();
+	const snapshot = f.diagnostics.snapshot();
+	assert.equal(snapshot.firstCommandFailure.id, 2);
+	assert.equal(snapshot.firstCommandFailure.method, "Runtime.evaluate");
+	assert.equal(snapshot.firstCommandFailure.scenario, "imported-discover");
+	const failurePending = snapshot.firstCommandFailure.connections[0];
+	assert.equal(failurePending.pendingCount, 20);
+	assert.equal(failurePending.pending.length, 16);
+	assert.equal(failurePending.pendingOmitted, 4);
+	assert.equal(failurePending.pending[0].ageMs, 120000);
+	assert.equal(failurePending.pending[0].viewport.width, 393);
+	assert.equal(snapshot.connections[0].pendingCount, 19);
+	assert.doesNotMatch(JSON.stringify(snapshot), /DO_NOT_LOG|PRIVATE_REQUEST|private.invalid|expression|requestBody/);
+	connection.close();
+	assert.ok((await outcomes).every(result => result.status === "rejected"));
+	assert.equal(timers.size, 0);
+});
+
+test("binding diagnostics track outstanding work, acknowledgement and rejection without consuming errors", async () => {
+	const f = diagnosticFixture();
+	const { connection, socket, timers } = await diagnosticSocket(f);
+	connection.scenario("trakt-preview");
+	const binding = connection.binding("pressGuidedPresentationKey");
+	const input = connection.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter" }, { binding });
+	assert.deepEqual(socket.sent[0].params, { type: "keyDown", key: "Enter" });
+	socket.reply(1); await input;
+	assert.equal(f.diagnostics.snapshot().bindings[0].state, "operation-complete");
+	const acknowledgement = connection.command("Runtime.evaluate", { expression: "PRIVATE_ACK()" }, { binding, acknowledgement: true });
+	assert.equal(f.diagnostics.snapshot().bindings[0].state, "acknowledgement-requested");
+	socket.reply(2); await acknowledgement;
+	assert.equal(f.diagnostics.snapshot().outstandingBindingCount, 0);
+	const rejected = connection.binding("clickTmdbListHierarchyControl");
+	const failed = connection.command("Input.dispatchMouseEvent", {}, { binding: rejected });
+	const asserted = assert.rejects(failed, /exceeded 120000 ms/);
+	[...timers.values()][0].callback(); await asserted;
+	assert.equal(f.diagnostics.snapshot().outstandingBindingCount, 0);
+	assert.ok(f.diagnostics.snapshot().recentActivity.some(r => r.event === "binding-rejected" && r.bindingId === rejected.id));
+	// A finally-based acknowledgement still runs after a rejected operation.
+	const ack = connection.command("Runtime.evaluate", { expression: "PRIVATE_FINALLY_ACK()" }, { binding: rejected, acknowledgement: true });
+	assert.equal(f.diagnostics.snapshot().outstandingBindingCount, 1);
+	assert.equal(f.diagnostics.snapshot().bindings[0].operationRejected, true);
+	socket.reply(4); await ack;
+	assert.ok(f.diagnostics.snapshot().recentActivity.some(r => r.event === "binding-acknowledged" && r.bindingId === rejected.id));
+	const stalled = connection.binding("sourceNamesSpace");
+	f.advance(80);
+	assert.equal(f.diagnostics.snapshot().bindings[0].ageMs, 80);
+	assert.equal(f.diagnostics.snapshot().bindings[0].id, stalled.id);
+	assert.doesNotMatch(JSON.stringify(f.diagnostics.snapshot()), /PRIVATE_ACK|PRIVATE_FINALLY_ACK/);
+	connection.close();
+});
+
+test("history, outstanding bindings, progress output and untrusted stderr are bounded and sanitised", () => {
+	const stream = new EventEmitter();
+	const capture = createBoundedStderrCapture(stream);
+	const f = diagnosticFixture({ resources: { browserStderrCapture: capture } });
+	stream.emit("data", "x".repeat(9000) + "\n[123:123:1015/000000:ERROR:bus.cc(408)] D-Bus https://private.invalid/body?token=SECRET\nDevTools listening on ws://private.invalid/secret\nAuthorization: Bearer SECRET\n[1:1:ERROR:private_secret.cc(1)] confidential\n{\"body\":\"PRIVATE_DATA\"}");
+	for (let i = 0; i < 100; i++) f.diagnostics.scenario(`scenario-${i}`);
+	for (let i = 0; i < 40; i++) f.diagnostics.binding("unit-binding");
+	const snapshot = f.diagnostics.snapshot();
+	assert.equal(snapshot.recentActivity.length, 48);
+	assert.equal(snapshot.outstandingBindingCount, 40);
+	assert.equal(snapshot.bindings.length, 16);
+	assert.equal(snapshot.bindingsOmitted, 24);
+	assert.ok(snapshot.omittedEvents > 0);
+	assert.ok(snapshot.omittedProgress > 0);
+	assert.equal(f.records.length, 64);
+	assert.equal(snapshot.browser.stderrBytes, 8192);
+	assert.ok(snapshot.browser.stderr.some(r => r.category === "dbus" && r.component === "bus.cc"));
+	const output = JSON.stringify(snapshot);
+	assert.ok(Buffer.byteLength(output) < 30000);
+	assert.doesNotMatch(output, /SECRET|PRIVATE_DATA|Authorization|private.invalid|private_secret|confidential|Bearer/);
+	capture.stop();
+});
+
+test("throwing or rejecting diagnostic sinks and broken collectors never mask primary or cleanup errors", async () => {
+	const primary = new Error("actual failure"), cleanup = new Error("actual cleanup failure");
+	const bad = new Proxy({}, { get() { throw new Error("observer failure"); } });
+	const sinks = [bad, createMountedBrowserDiagnostics({ log() { throw new Error("sink failure"); } }),
+		createMountedBrowserDiagnostics({ log: () => Promise.reject(new Error("async sink failure")), resources() { throw new Error("collector failure"); } })];
+	for (const diagnostics of sinks) {
+		await assert.rejects(runWithLifecycleCleanup(() => { throw primary; }, () => { throw cleanup; }, diagnostics), error => {
+			assert.equal(error.primaryError, primary); assert.equal(error.cleanupError, cleanup); assert.equal(error.cause, primary); return true;
+		});
+		await assert.rejects(runWithLifecycleCleanup(() => { throw primary; }, successfulCleanup, diagnostics), error => error === primary);
+		await assert.rejects(runWithLifecycleCleanup(() => 42, () => { throw cleanup; }, diagnostics), error => error.cleanupError === cleanup && error.operationValue === 42);
+		assert.equal((await runWithLifecycleCleanup(() => 42, successfulCleanup, diagnostics)).value, 42);
+	}
+	await new Promise(resolve => setImmediate(resolve));
+});
+
+test("cleanup snapshots retain cooperative/fallback outcomes on success and failure", async () => {
+	for (const fails of [false, true]) {
+		const f = diagnosticFixture();
+		const primary = new Error("original failure with SECRET");
+		const cleanup = new BrowserShutdownError(new Error("graceful"), new Error("fallback"), { rootPid: 123, ownedPids: [123], remainingPids: [123], graceful: "failed", fallback: "failed" });
+		await assert.rejects(runWithLifecycleCleanup(() => { throw primary; }, () => {
+			if (fails) throw cleanup;
+			return { ...successfulCleanup(), browser: { graceful: "failed", fallback: "succeeded", ownedPids: [123], remainingPids: [] } };
+		}, f.diagnostics), error => fails ? error.primaryError === primary && error.cleanupError === cleanup : error === primary);
+		assert.equal(f.records.at(-1).cleanup.outcome, fails ? "failed" : "succeeded");
+		assert.equal(f.records.at(-1).cleanup.fallback, fails ? "failed" : "succeeded");
+		assert.doesNotMatch(JSON.stringify(f.records), /SECRET/);
+	}
+});
+
+test("retained stderr stops exactly once after successful cleanup and after failed cleanup", async () => {
+	for (const fails of [false, true]) {
+		let stops = 0;
+		const f = diagnosticFixture();
+		const resources = { browserProcess: fakeChild(123), processTree: { remainingPids: async () => [123] }, browserStderrCapture: { stop() { stops++; } } };
+		const options = { diagnostics: f.diagnostics, shutdownBrowserFn: async () => {
+			if (fails) throw new Error("shutdown failed");
+			return successfulCleanup().browser;
+		}, removeDirectoryFn: async () => ({ retries: 0 }), directoryEntriesFn: async () => [] };
+		const cleanup = cleanupMountedBrowser(resources, options);
+		if (fails) await assert.rejects(cleanup, /cleanup failed/);
+		else { await cleanup; await cleanupMountedBrowser(resources, options); }
+		assert.equal(stops, 1);
+		assert.ok(f.diagnostics.snapshot().recentActivity.some(r => r.event === "phase-start" && r.phase === "browser-shutdown"));
+		assert.ok(f.diagnostics.snapshot().recentActivity.some(r => r.event === "phase-start" && r.phase === "resource-cleanup"));
+	}
+});
+
+test("scenario identity survives fixture navigation and existing readiness markers without extra commands", async () => {
+	const f = diagnosticFixture();
+	const { connection, socket } = await diagnosticSocket(f);
+	connection.scenario("workspace-import", { enlargedText: true });
+	const navigation = connection.command("Page.navigate", { url: "http://private.invalid/SECRET" });
+	assert.equal(f.diagnostics.snapshot().scenario, "workspace-import");
+	socket.reply(1); await navigation;
+	assert.equal(f.diagnostics.snapshot().phase, "fixture-readiness");
+	assert.equal(f.diagnostics.snapshot().scenario, "workspace-import");
+	const waiting = connection.command("Runtime.evaluate", { expression: "SECRET_READINESS" });
+	socket.reply(2, { result: { value: false } }); await waiting;
+	assert.equal(f.diagnostics.snapshot().phase, "fixture-readiness");
+	const ready = connection.command("Runtime.evaluate", { expression: "SECRET_READINESS" });
+	socket.reply(3, { result: { value: true } }); await ready;
+	assert.equal(f.diagnostics.snapshot().phase, "scenario-execution");
+	assert.equal(f.diagnostics.snapshot().scenario, "workspace-import");
+	assert.equal(f.diagnostics.snapshot().fontEnvironment.enlargedText, true);
+	assert.equal(socket.sent.length, 3);
+	assert.equal(f.records.filter(r => r.event === "scenario-complete").length, 0);
+	f.diagnostics.stage("cleanup");
+	assert.equal(f.records.filter(r => r.event === "scenario-complete").length, 1);
+	assert.doesNotMatch(JSON.stringify(f.records), /SECRET|private.invalid/);
+	connection.close();
 });

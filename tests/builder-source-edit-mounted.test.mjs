@@ -13,6 +13,7 @@ import { extractTmdbProxyBaseUrl } from "../builder/build-config.js";
 import {
 	cleanupMountedBrowser,
 	connectDevTools,
+	createMountedBrowserDiagnostics,
 	createBoundedStderrCapture,
 	createBrowserProcessTree,
 	resolveDevToolsStartupTimeout,
@@ -64,6 +65,7 @@ async function runTraktFoundationMatrix(connection, views, entrypoint = "__runTr
 	await connection.command("Emulation.setFocusEmulationEnabled", { enabled: true });
 	const cases = [];
 	for (const view of views) {
+		connection.scenario({ __runTraktFoundationScenario: "trakt-foundation", __runTraktCreationScenario: "trakt-creation", __runTraktPreviewScenario: "trakt-preview" }[entrypoint], view);
 		await connection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: view.height, deviceScaleFactor: 1, mobile: view.width < 900 });
 		await connection.command("Emulation.setEmulatedMedia", { features: [{ name: "forced-colors", value: view.forcedColors ? "active" : "none" }, { name: "prefers-reduced-motion", value: view.reducedMotion === false ? "no-preference" : "reduce" }] });
 		const checked = await connection.command("Runtime.evaluate", { expression: `window.${entrypoint}(${JSON.stringify(view)})`, awaitPromise: true, returnByValue: true });
@@ -95,7 +97,8 @@ async function runGenreStructureMatrix(connection) {
 }
 
 async function runMountedPage() {
-	const timing = createValidationTiming("Source browser");
+	const diagnostics = createMountedBrowserDiagnostics({ suite: "Source", resources: () => resources });
+	const timing = createValidationTiming("Source browser", { onStage: label => { if (label !== "Browser cleanup") diagnostics.scenario(label); } });
 	const traktPreviewOnly = process.env.TRAKT_PREVIEW_ONLY === "1";
 	const traktCreationOnly = process.env.TRAKT_CREATION_ONLY === "1";
 	const traktFoundationOnly = process.env.TRAKT_SOURCE_FOUNDATION_ONLY === "1";
@@ -153,6 +156,7 @@ async function runMountedPage() {
 
 		resources.profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), "builder-source-edit-mounted-"));
 		resources.browserExecutable = chromeExecutable();
+		diagnostics.stage("chrome-launch");
 		resources.browserProcess = spawn(resources.browserExecutable, [
 			"--headless=new",
 			"--disable-background-networking",
@@ -171,91 +175,85 @@ async function runMountedPage() {
 			windowsHide: true,
 		});
 		resources.browserStderrCapture = createBoundedStderrCapture(resources.browserProcess.stderr);
-		try {
-			await new Promise((resolve, reject) => {
-				const cleanup = () => {
-					resources.browserProcess.removeListener("spawn", onSpawn);
-					resources.browserProcess.removeListener("error", onError);
-				};
-				const onSpawn = () => {
-					cleanup();
-					resolve();
-				};
-				const onError = (error) => {
-					cleanup();
-					reject(error);
-				};
-				resources.browserProcess.once("spawn", onSpawn);
-				resources.browserProcess.once("error", onError);
-			});
-		} catch (error) {
-			resources.browserStderrCapture.stop();
-			resources.browserStderrCapture = null;
-			throw error;
-		}
+		await new Promise((resolve, reject) => {
+			const cleanup = () => {
+				resources.browserProcess.removeListener("spawn", onSpawn);
+				resources.browserProcess.removeListener("error", onError);
+			};
+			const onSpawn = () => {
+				cleanup();
+				resolve();
+			};
+			const onError = (error) => {
+				cleanup();
+				reject(error);
+			};
+			resources.browserProcess.once("spawn", onSpawn);
+			resources.browserProcess.once("error", onError);
+		});
 		resources.processTree = createBrowserProcessTree({ rootPid: resources.browserProcess.pid });
 
-		let endpoint;
-		try {
-			endpoint = await waitForDevToolsEndpoint({
-				profileDir: resources.profileDir,
-				browserProcess: resources.browserProcess,
-				browserExecutable: resources.browserExecutable,
-				stderrCapture: resources.browserStderrCapture,
-				timeoutMs: devToolsStartupMs,
-			});
-		} finally {
-			resources.browserStderrCapture.stop();
-			resources.browserStderrCapture = null;
-		}
+		const endpoint = await waitForDevToolsEndpoint({
+			profileDir: resources.profileDir,
+			browserProcess: resources.browserProcess,
+			browserExecutable: resources.browserExecutable,
+			stderrCapture: resources.browserStderrCapture,
+			diagnostics,
+			timeoutMs: devToolsStartupMs,
+		});
 		resources.debugPort = endpoint.port;
-		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl);
+		resources.browserConnection = await connectDevTools(endpoint.browserWebSocketUrl, { diagnostics, connectionType: "browser" });
+		diagnostics.stage("page-target-discovery");
 		const targets = await waitForJson(`http://127.0.0.1:${endpoint.port}/json/list`);
 		const target = targets.find((entry) => entry.type === "page");
 		if (!target?.webSocketDebuggerUrl) throw new Error("Chrome page target is unavailable.");
-		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000 });
+		resources.pageConnection = await connectDevTools(target.webSocketDebuggerUrl, { commandTimeoutMs: 120000, diagnostics, connectionType: "page" });
 		await resources.pageConnection.command("Page.enable");
 		await resources.pageConnection.command("Runtime.enable");
 		// Native keys are also used by name recovery in the default CI matrix.
 		resources.pageConnection.onEvent((message) => {
 			if (message.method !== "Runtime.bindingCalled" || message.params.name !== "pressGuidedPresentationKey") return;
+			const binding = resources.pageConnection.binding("pressGuidedPresentationKey");
 			const requestedKey = JSON.parse(message.params.payload).key;
 			const key = requestedKey === "Shift+Tab" ? "Tab" : requestedKey;
 			const modifiers = requestedKey === "Shift+Tab" ? 8 : 0;
 			const code = key === " " ? "Space" : key;
 			const virtualKey = key === " " ? 32 : key === "Escape" ? 27 : key === "Enter" ? 13 : key === "ArrowRight" ? 39 : key === "ArrowLeft" ? 37 : 9;
-			resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers, windowsVirtualKeyCode: virtualKey, ...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}) })
-				.then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers, windowsVirtualKeyCode: virtualKey }))
-				.then(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish230Key()" }));
+			resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers, windowsVirtualKeyCode: virtualKey, ...(key === "Enter" ? { text: "\r", unmodifiedText: "\r" } : {}) }, { binding })
+				.then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers, windowsVirtualKeyCode: virtualKey }, { binding }))
+				.then(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish230Key()" }, { binding, acknowledgement: true }));
 		});
 		await resources.pageConnection.command("Runtime.addBinding", { name: "pressGuidedPresentationKey" });
 		// Native pointer activation exposes form default actions hidden by act().
 		resources.pageConnection.onEvent((message) => {
 			if (message.method !== "Runtime.bindingCalled" || message.params.name !== "clickTmdbListHierarchyControl") return;
+			const binding = resources.pageConnection.binding("clickTmdbListHierarchyControl");
 			const { x, y } = JSON.parse(message.params.payload);
-			resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 })
-				.then(() => resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }))
-				.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishListClick?.()" }));
+			resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 }, { binding })
+				.then(() => resources.pageConnection.command("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }, { binding }))
+				.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishListClick?.()" }, { binding, acknowledgement: true }));
 		});
 		await resources.pageConnection.command("Runtime.addBinding", { name: "clickTmdbListHierarchyControl" });
 		if (process.env.TMDB_204_SCREENSHOTS) {
 			await fsPromises.mkdir(process.env.TMDB_204_SCREENSHOTS, { recursive: true });
 			resources.pageConnection.onEvent((message) => {
 				if (message.method !== "Runtime.bindingCalled" || message.params.name !== "capture204Preview") return;
+				const binding = resources.pageConnection.binding("capture204Preview");
 				const name = JSON.parse(message.params.payload).name;
 				if (!/^[a-zA-Z0-9-]+$/.test(name)) throw new Error("Invalid screenshot name.");
-				resources.pageConnection.command("Page.captureScreenshot", { format: "png" })
+				resources.pageConnection.command("Page.captureScreenshot", { format: "png" }, { binding })
 					.then(({ data }) => fsPromises.writeFile(path.join(process.env.TMDB_204_SCREENSHOTS, name + ".png"), Buffer.from(data, "base64")))
-					.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish204Capture()" }));
+					.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finish204Capture()" }, { binding, acknowledgement: true }));
 			});
 			await resources.pageConnection.command("Runtime.addBinding", { name: "capture204Preview" });
 		}
 
   resources.pageConnection.onEvent((message) => {
    if (message.method !== "Runtime.bindingCalled" || message.params.name !== "sourceNamesSpace") return;
-   resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32 })
-    .then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32 }))
-    .finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishNamesKey?.()" }));
+   const binding = resources.pageConnection.binding("sourceNamesSpace");
+   resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32 }, { binding })
+    .then(() => resources.pageConnection.command("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32 }, { binding }))
+    .finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishNamesKey?.()" }, { binding, acknowledgement: true }));
   });
   await resources.pageConnection.command("Runtime.addBinding", { name: "sourceNamesSpace" });
 		const address = resources.vite.httpServer.address();
@@ -349,6 +347,7 @@ async function runMountedPage() {
 			const result = evaluated.result?.value;
 			if (result?.status === "complete") {
 				if (importedDiscoverOnly || !new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
+					diagnostics.scenario("imported-discover");
 					result.results.importedDiscoverCases = [];
 					for (const view of (importedDiscoverOnly ? [{ width: 360 }, { width: 384 }, { width: 393, preview: true }, { width: 402 }, { width: 412 }, { width: 1280, mediaType: "TV", preview: true }] : [{ width: 393, preview: true }, { width: 1280, mediaType: "TV", preview: true }])) {
 						await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: view.width, height: 852, deviceScaleFactor: 1, mobile: view.width < 900 });
@@ -359,6 +358,7 @@ async function runMountedPage() {
 					}
 					if (importedDiscoverOnly) return result.results;
 				}
+				diagnostics.scenario("post-imported-discover-routing");
 				if (!new URL((await resources.pageConnection.command("Runtime.evaluate", { expression: "location.href", returnByValue: true })).result.value).search) {
 					result.results.traktCreationCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktCreationScenario");
 					result.results.traktPreviewCases = await runTraktFoundationMatrix(resources.pageConnection, [{ width: 393, height: 852 }, { width: 1280, height: 900 }], "__runTraktPreviewScenario");
@@ -730,11 +730,12 @@ async function runMountedPage() {
 					const captures = [];
 					resources.pageConnection.onEvent((message) => {
 						if (message.method !== "Runtime.bindingCalled" || message.params.name !== "captureNativePreview") return;
+						const binding = resources.pageConnection.binding("captureNativePreview");
 						const name = JSON.parse(message.params.payload).name;
 						const output = path.join(os.tmpdir(), "dingo-200-" + name + ".png");
-						resources.pageConnection.command("Page.captureScreenshot", { format: "png" })
+						resources.pageConnection.command("Page.captureScreenshot", { format: "png" }, { binding })
 							.then(async ({ data }) => { await fsPromises.writeFile(output, Buffer.from(data, "base64")); captures.push(output); })
-							.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishNativeCapture()" }));
+							.finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishNativeCapture()" }, { binding, acknowledgement: true }));
 					});
 					await resources.pageConnection.command("Runtime.addBinding", { name: "captureNativePreview" });
 					const matrix = ["people", "studio", "network"].flatMap((family) => ["add", "new-collection", "new-folder"].map((scope) => ({ family, scope, width: 393, height: 852 })));
@@ -780,10 +781,11 @@ async function runMountedPage() {
 					// Isolated #198 controlled-response mode only. No live-service claim.
 					resources.pageConnection.onEvent((message) => {
 						if (message.method === "Runtime.bindingCalled" && message.params.name === "captureSourceSortPreview") {
+							const binding = resources.pageConnection.binding("captureSourceSortPreview");
 							const view = JSON.parse(message.params.payload);
-							resources.pageConnection.command("Page.captureScreenshot", { format: "png" }).then(async ({ data }) => {
+							resources.pageConnection.command("Page.captureScreenshot", { format: "png" }, { binding }).then(async ({ data }) => {
 								await fsPromises.writeFile(path.join(os.tmpdir(), `dingo-198-preview-${view.width}-${view.height}${view.forced ? "-forced" : ""}.png`), Buffer.from(data, "base64"));
-							}).catch((error) => interceptionErrors.push(error.message)).finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishSourceSortCapture()" }));
+							}).catch((error) => interceptionErrors.push(error.message)).finally(() => resources.pageConnection.command("Runtime.evaluate", { expression: "window.__finishSourceSortCapture()" }, { binding, acknowledgement: true }));
 							return;
 						}
 						if (message.method !== "Fetch.requestPaused") return;
@@ -1055,6 +1057,7 @@ async function runMountedPage() {
 				sourceChooserTabletLandscape = sourceChooserTabletLandscapeEvaluation.result?.value;
 				await resources.pageConnection.command("Emulation.setDeviceMetricsOverride", { width: 360, height: 852, deviceScaleFactor: 1, mobile: true });
 				timing.stage("Wide Font Source Chooser");
+				diagnostics.scenario("wide-font-source-chooser", { fontFamily: "Verdana, sans-serif" });
 				const wideFontSourceChooserEvaluation = await resources.pageConnection.command("Runtime.evaluate", {
 					expression: `window.__runSourceChooserLayoutScenario({ fontFamily: 'Verdana, sans-serif', includeGrowthStress: true, includeOrderStress: true, includeClassicScrollbarStress: true })`,
 					awaitPromise: true,
@@ -1314,9 +1317,9 @@ async function runMountedPage() {
 		throw new Error("Mounted source-edit regressions timed out.");
 	}, async () => {
 		timing.stage("Browser cleanup");
-		try { return await cleanupMountedBrowser(resources); }
+		try { return await cleanupMountedBrowser(resources, { diagnostics }); }
 		finally { timing.finish(); }
-	});
+	}, diagnostics);
 
 	if (execution.cleanupReport.browser.fallback === "succeeded") {
 		console.warn(

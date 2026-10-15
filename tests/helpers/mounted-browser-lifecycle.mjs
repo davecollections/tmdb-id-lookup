@@ -2,6 +2,9 @@ import { execFile as execFileCallback } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
+import { performance } from "node:perf_hooks";
+import { diagnose, sanitiseChromeStderr, DIAGNOSTIC_PENDING_LIMIT } from "./mounted-browser-diagnostics.mjs";
+export { createMountedBrowserDiagnostics } from "./mounted-browser-diagnostics.mjs";
 
 const execFile = promisify(execFileCallback);
 
@@ -154,12 +157,12 @@ function chromeStderrDiagnostic(stderrCapture) {
 	try {
 		const captureError = stderrCapture?.error?.();
 		if (captureError) {
-			return `chromeStderr=<capture unavailable: ${boundedDiagnosticText(asError(captureError).message)}>`;
+			return "chromeStderr=<capture unavailable>";
 		}
 		const stderrText = stderrCapture?.text?.() ?? "";
-		return `chromeStderr=${JSON.stringify(stderrText || "<none captured>")}`;
+		return `chromeStderr=${JSON.stringify(sanitiseChromeStderr(stderrText))}`;
 	} catch (error) {
-		return `chromeStderr=<capture unavailable: ${boundedDiagnosticText(asError(error).message)}>`;
+		return "chromeStderr=<capture unavailable>";
 	}
 }
 
@@ -287,6 +290,7 @@ export async function waitForDevToolsEndpoint({
 	fsApi = fs,
 	delay = abortableDelay,
 	now = Date.now,
+	diagnostics,
 } = {}) {
 	if (!profileDir) throw new TypeError("A Chrome profile directory is required.");
 	if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
@@ -296,6 +300,7 @@ export async function waitForDevToolsEndpoint({
 		throw new TypeError("A positive Chrome DevTools polling interval is required.");
 	}
 
+	diagnose(diagnostics, "stage", "endpoint-publication");
 	const activePortPath = path.join(profileDir, "DevToolsActivePort");
 	const deadlineAt = now() + timeoutMs;
 	let lastProblem = "DevToolsActivePort has not been created";
@@ -318,6 +323,7 @@ export async function waitForDevToolsEndpoint({
 				port <= 65535 &&
 				browserPath.startsWith("/devtools/browser/")
 			) {
+				diagnose(diagnostics, "event", "endpoint-published");
 				return {
 					port,
 					browserPath,
@@ -355,6 +361,9 @@ export async function connectDevTools(
 		WebSocketImpl = globalThis.WebSocket,
 		timeoutMs = DEFAULT_DEVTOOLS_CONNECTION_MS,
 		commandTimeoutMs = DEFAULT_DEVTOOLS_COMMAND_MS,
+		diagnostics,
+		connectionType = "unknown",
+		now = () => performance.now(),
 		signal,
 		setTimeoutFn = setTimeout,
 		clearTimeoutFn = clearTimeout,
@@ -371,6 +380,7 @@ export async function connectDevTools(
 	}
 	throwIfAborted(signal);
 
+	diagnose(diagnostics, "stage", `${connectionType}-websocket`);
 	const socket = new WebSocketImpl(url);
 	await new Promise((resolve, reject) => {
 		let timer = null;
@@ -412,16 +422,40 @@ export async function connectDevTools(
 		}, timeoutMs);
 	});
 
+	diagnose(diagnostics, "event", "websocket-connected", { connection: connectionType });
+	const diagnosticNow = () => { try { return now(); } catch { return 0; } };
 	let nextId = 0;
 	const eventListeners = new Set();
 	let closed = false;
 	const pending = new Map();
+	diagnose(diagnostics, "registerConnection", connectionType, () => ({
+		state: closed ? "closed" : "open", pendingCount: pending.size,
+		pending: [...pending.entries()].slice(0, DIAGNOSTIC_PENDING_LIMIT).map(([id, operation]) => ({
+			id, ...operation.metadata, ageMs: Math.max(0, Math.round(diagnosticNow() - operation.startedAt)),
+		})),
+		pendingOmitted: Math.max(0, pending.size - DIAGNOSTIC_PENDING_LIMIT),
+	}));
 	let resolveClosed;
 	const closedPromise = new Promise((resolve) => { resolveClosed = resolve; });
 
 	const settlePending = (id, outcome, value) => {
 		const operation = pending.get(id);
 		if (!operation) return;
+		const fields = { id, ...operation.metadata, durationMs: Math.max(0, Math.round(diagnosticNow() - operation.startedAt)) };
+		if (outcome === "reject") {
+			diagnose(diagnostics, "commandFailure", fields);
+			diagnose(operation.binding, "mark", "rejected");
+		} else {
+			diagnose(diagnostics, "event", "command-complete", fields);
+			if (operation.binding) diagnose(operation.binding, "mark", value?.exceptionDetails ? "rejected" : operation.acknowledgement ? "acknowledged" : "operation-complete");
+			if (operation.metadata.method === "Page.navigate") diagnose(diagnostics, "stage", "fixture-readiness");
+			// Existing fixtures publish either a boolean ready flag or a complete status.
+			// Inspect only that marker; do not retain values or issue a diagnostic query.
+			if (operation.metadata.method === "Runtime.evaluate" && diagnose(diagnostics, "context")?.phase === "fixture-readiness") {
+				const ready = value?.result?.value;
+				if (ready === true || ready === "complete" || ready?.status === "complete") diagnose(diagnostics, "stage", "scenario-execution");
+			}
+		}
 		pending.delete(id);
 		clearTimeoutFn(operation.timer);
 		operation[outcome](value);
@@ -457,19 +491,33 @@ export async function connectDevTools(
 
 	return {
 		closed: closedPromise,
+		scenario: (label, view) => diagnose(diagnostics, "scenario", label, view),
+		binding: name => diagnose(diagnostics, "binding", name),
 		onEvent(listener) { eventListeners.add(listener); return () => eventListeners.delete(listener); },
 		isClosed: () => closed,
 		close() {
 			if (!closed && socket.readyState < 2) socket.close();
 		},
-		command(method, params = {}) {
+		command(method, params = {}, { binding, acknowledgement = false } = {}) {
 			if (closed || socket.readyState !== 1) {
 				return Promise.reject(new Error("Chrome DevTools WebSocket is not open."));
 			}
+			if (method === "Emulation.setDeviceMetricsOverride") diagnose(diagnostics, "viewport", params);
+			if (method === "Page.navigate") diagnose(diagnostics, "stage", "navigation");
+			if (acknowledgement) diagnose(binding, "mark", "acknowledgement-requested");
 			const id = ++nextId;
 			return new Promise((resolve, reject) => {
-				const operation = { resolve, reject, timer: null };
+				const operation = { resolve, reject, timer: null, binding, acknowledgement,
+					startedAt: diagnosticNow(), metadata: {
+						connection: connectionType, method: method.length <= 80 && /^[A-Za-z]+\.[A-Za-z]+$/u.test(method) ? method : "unavailable",
+						phase: diagnose(diagnostics, "context")?.phase ?? null,
+						scenario: diagnose(diagnostics, "context")?.scenario ?? null,
+						viewport: diagnose(diagnostics, "context")?.viewport ?? null,
+						bindingId: binding?.id ?? null,
+					},
+				};
 				pending.set(id, operation);
+				diagnose(diagnostics, "event", "command-start", { id, ...operation.metadata });
 				operation.timer = setTimeoutFn(() => {
 					settlePending(
 						id,
@@ -897,6 +945,7 @@ async function cleanupMountedBrowserOnce(resources, {
 	directoryEntriesFn = directoryEntries,
 	shutdownOptions,
 	removeOptions,
+	diagnostics,
 } = {}) {
 	const report = {
 		browserExecutable: resources.browserExecutable ?? null,
@@ -914,6 +963,7 @@ async function cleanupMountedBrowserOnce(resources, {
 	let browserOwnershipEnded = !resources.browserProcess?.pid;
 	let viteOwnershipEnded = !resources.vite;
 
+	diagnose(diagnostics, "stage", "browser-shutdown");
 	if (!browserOwnershipEnded) {
 		try {
 			report.browser = await shutdownBrowserFn({
@@ -927,6 +977,7 @@ async function cleanupMountedBrowserOnce(resources, {
 			resources.processTree = null;
 		} catch (error) {
 			errors.push(asError(error));
+			diagnose(diagnostics, "phaseFailure", error);
 			report.browser.graceful = "failed";
 			report.browser.fallback = "failed";
 			report.browser.ownedPids = error?.diagnostics?.ownedPids ?? [resources.browserProcess.pid];
@@ -934,6 +985,7 @@ async function cleanupMountedBrowserOnce(resources, {
 		}
 	}
 
+	diagnose(diagnostics, "stage", "resource-cleanup");
 	for (const key of ["pageConnection", "browserConnection"]) {
 		const closeError = closeConnection(resources[key]);
 		if (closeError) errors.push(closeError);
@@ -992,7 +1044,9 @@ export function cleanupMountedBrowser(resources, options = {}) {
 	const activeCleanup = cleanupOperations.get(resources);
 	if (activeCleanup) return activeCleanup;
 
-	const cleanup = cleanupMountedBrowserOnce(resources, options).catch((error) => {
+	const cleanup = cleanupMountedBrowserOnce(resources, options).finally(() => {
+		try { resources.browserStderrCapture?.stop(); } catch { /* Diagnostics cannot affect cleanup. */ }
+	}).catch((error) => {
 		cleanupOperations.delete(resources);
 		throw error;
 	});
@@ -1019,15 +1073,17 @@ export class MountedCleanupAfterSuccessError extends Error {
 	}
 }
 
-export async function runWithLifecycleCleanup(operation, cleanup) {
+export async function runWithLifecycleCleanup(operation, cleanup, diagnostics) {
 	let operationValue;
 	let primaryError = null;
 	try {
 		operationValue = await operation();
 	} catch (error) {
 		primaryError = asError(error);
+		diagnose(diagnostics, "failure", primaryError);
 	}
 
+	diagnose(diagnostics, "stage", "cleanup");
 	let cleanupReport;
 	let cleanupError = null;
 	try {
@@ -1036,6 +1092,7 @@ export async function runWithLifecycleCleanup(operation, cleanup) {
 		cleanupError = asError(error);
 	}
 
+	diagnose(diagnostics, "cleanup", cleanupReport, cleanupError);
 	if (primaryError && cleanupError) throw new MountedLifecycleError(primaryError, cleanupError);
 	if (primaryError) throw primaryError;
 	if (cleanupError) throw new MountedCleanupAfterSuccessError(cleanupError, operationValue);
