@@ -20,7 +20,7 @@ function errorKind(error) {
 export function sanitiseChromeStderr(text) {
 	return String(text).slice(-8192).split(/\r?\n/u).filter(Boolean).slice(-12).map(line => {
 		const severity = line.match(/:(INFO|WARNING|ERROR|FATAL):/u)?.[1] ?? "unknown";
-		const candidate = line.match(/:([a-z_]+\.cc)\(\d+\)/u)?.[1];
+		const candidate = line.match(/:(?:[a-zA-Z0-9_.-]+\/)*([a-z_]+\.cc)(?:\(\d+\)|:\d+(?=\]|$))/u)?.[1];
 		const component = ["bus.cc", "object_proxy.cc", "sandbox_linux.cc", "zygote_host_impl_linux.cc", "gpu_process_host.cc", "gpu_init.cc", "crashpad_client_linux.cc", "headless_shell.cc", "devtools_http_handler.cc"].includes(candidate) ? candidate : "unknown";
 		const category = line.includes("DevTools listening on") ? "devtools-listening"
 			: /[Dd][Bb]us|D-Bus/u.test(line) ? "dbus"

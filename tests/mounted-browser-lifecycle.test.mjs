@@ -29,6 +29,8 @@ import {
 	withDeadline,
 } from "./helpers/mounted-browser-lifecycle.mjs";
 
+import { sanitiseChromeStderr } from "./helpers/mounted-browser-diagnostics.mjs";
+
 const execFile = promisify(execFileCallback);
 
 function deferred() {
@@ -1060,6 +1062,59 @@ test("binding diagnostics track outstanding work, acknowledgement and rejection 
 	assert.equal(f.diagnostics.snapshot().bindings[0].id, stalled.id);
 	assert.doesNotMatch(JSON.stringify(f.diagnostics.snapshot()), /PRIVATE_ACK|PRIVATE_FINALLY_ACK/);
 	connection.close();
+});
+
+test("Chrome stderr recognises allowlisted basenames in Linux and legacy component formats", () => {
+	const components = [
+		"dbus/bus.cc", "dbus/object_proxy.cc", "sandbox/policy/linux/sandbox_linux.cc",
+		"content/browser/zygote_host/zygote_host_impl_linux.cc", "content/browser/gpu/gpu_process_host.cc",
+		"gpu/ipc/service/gpu_init.cc", "components/crash/core/app/crashpad_client_linux.cc",
+		"headless/app/headless_shell.cc", "content/browser/devtools/devtools_http_handler.cc",
+	];
+	for (const path of components) {
+		const basename = path.split("/").at(-1);
+		for (const location of [`${path}:405`, `${basename}(405)`]) {
+			const [entry] = sanitiseChromeStderr(`[123:456:1016/123456.789012:ERROR:${location}]`);
+			assert.equal(entry.component, basename, location);
+			assert.equal(entry.severity, "ERROR");
+		}
+	}
+});
+
+test("Chrome stderr keeps unknown and malformed components unknown", () => {
+	for (const location of [
+		"private/secret.cc:405", "secret.cc(405)", "dbus/not_bus.cc:405",
+		"dbus/bus.cc", "dbus/bus.cc:", "dbus/bus.cc:-1", "dbus/bus.cc:4.05",
+		"dbus/bus.cc:405extra", "dbus/bus.cc.extra:405", "bus.cc()", "bus.cc(nope)",
+	]) {
+		const [entry] = sanitiseChromeStderr(`[123:456:1016/123456.789012:ERROR:${location}]`);
+		assert.equal(entry.component, "unknown", location);
+		assert.equal(entry.severity, "ERROR");
+	}
+});
+
+test("Chrome stderr preserves classification and bounded sanitisation for real Linux headers", () => {
+	const sensitive = "PRIVATE_MESSAGE /home/private/profile https://private.invalid/path?token=SECRET Authorization: Bearer PRIVATE_TOKEN";
+	const inputs = [
+		["INFO", "headless/app/headless_shell.cc", "DevTools listening on ws://private.invalid/secret", "devtools-listening"],
+		["WARNING", "sandbox/policy/linux/sandbox_linux.cc", "Sandbox", "sandbox"],
+		["ERROR", "dbus/bus.cc", "D-Bus", "dbus"],
+		["FATAL", "components/crash/core/app/crashpad_client_linux.cc", "Crashpad", "crashpad"],
+		["ERROR", "private/secret.cc", "", "message-omitted"],
+	];
+	const entries = sanitiseChromeStderr(inputs.map(([severity, path, message]) =>
+		`[123:456:1016/123456.789012:${severity}:${path}:405] ${message} ${sensitive}`).join("\n"));
+	assert.deepEqual(entries, inputs.map(([severity, path, , category]) => ({
+		severity, component: path === "private/secret.cc" ? "unknown" : path.split("/").at(-1), category,
+	})));
+	const repeated = sanitiseChromeStderr(Array(20).fill(`[123:456:ERROR:dbus/bus.cc:405] ${sensitive}`).join("\n"));
+	assert.equal(repeated.length, 12);
+	assert.ok(repeated.every(entry => entry.component === "bus.cc"));
+	assert.ok(Buffer.byteLength(JSON.stringify(repeated)) < 2048);
+	const truncated = sanitiseChromeStderr(`[123:456:ERROR:dbus/bus.cc:405] ${sensitive}\n` + "x".repeat(8192));
+	assert.deepEqual(truncated, [{ severity: "unknown", component: "unknown", category: "message-omitted" }]);
+	const output = JSON.stringify({ entries, repeated, truncated });
+	assert.doesNotMatch(output, /PRIVATE|SECRET|Authorization|Bearer|private|secret|https?:|wss?:|\//u);
 });
 
 test("history, outstanding bindings, progress output and untrusted stderr are bounded and sanitised", () => {
