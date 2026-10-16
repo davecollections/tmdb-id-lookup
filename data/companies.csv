@@ -40848,7 +40848,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 69223,Studio Filmów Animowanych w Krakowie,22,,,,https://www.themoviedb.org/company/69223
 69224,Juniper Post,5,,,,https://www.themoviedb.org/company/69224
 69225,ExtraOrdinary Casting,1,,,,https://www.themoviedb.org/company/69225
-69228,Filbox Produções,1,,PT,,https://www.themoviedb.org/company/69228
 69230,Werner Film Productions,3,"Fitzroy, Victoria",AU,,https://www.themoviedb.org/company/69230
 69231,Blackfella Films,12,"Sydney, New South Wales",AU,,https://www.themoviedb.org/company/69231
 69232,Light Night,15,Geneva,CH,,https://www.themoviedb.org/company/69232
@@ -220270,7 +220269,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 269728,Black Breeders,0,,,,https://www.themoviedb.org/company/269728
 269729,Careful Caterpillar Productions,1,,,,https://www.themoviedb.org/company/269729
 269730,Shwe Nyar Maung Films,1,,,,https://www.themoviedb.org/company/269730
-269731,Classroom 105,6,,,,https://www.themoviedb.org/company/269731
 269732,Braised Films,1,,,,https://www.themoviedb.org/company/269732
 269733,Tireless Films (ES),2,,,,https://www.themoviedb.org/company/269733
 269734,Cave Rock Publishing,1,,,,https://www.themoviedb.org/company/269734
@@ -228573,7 +228571,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 278516,Soi Animatica,1,,,,https://www.themoviedb.org/company/278516
 278517,Lin Oliver Productions,1,,,,https://www.themoviedb.org/company/278517
 278518,ANIKE Studio,1,"London, UK",GB,,https://www.themoviedb.org/company/278518
-278519,Plot Coalition,1,,,,https://www.themoviedb.org/company/278519
 278520,G.T.Entertainment,1,,JP,,https://www.themoviedb.org/company/278520
 278521,G-Fity Digital Ajans,1,,,,https://www.themoviedb.org/company/278521
 278523,Urban Club,1,,UA,,https://www.themoviedb.org/company/278523
@@ -261305,7 +261302,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 312690,Mecha-Roja,1,,,,https://www.themoviedb.org/company/312690
 312691,Главная редакция программ для детей и юношества ЦТ,0,,,,https://www.themoviedb.org/company/312691
 312692,La belge prod,0,,,,https://www.themoviedb.org/company/312692
-312693,Filmakademie Baden-Württenberg,1,,,,https://www.themoviedb.org/company/312693
 312694,UERJ,0,,,,https://www.themoviedb.org/company/312694
 312695,Belgian Mafia,0,,,,https://www.themoviedb.org/company/312695
 312696,La Belge Prod,0,,,,https://www.themoviedb.org/company/312696
@@ -261796,7 +261792,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 313190,Prani Media,1,,,,https://www.themoviedb.org/company/313190
 313191,Sinister Film,1,,,,https://www.themoviedb.org/company/313191
 313192,lazy owl,1,,,,https://www.themoviedb.org/company/313192
-313193,amazon prime,3,,,,https://www.themoviedb.org/company/313193
 313194,Extension 101 Inc,0,,,,https://www.themoviedb.org/company/313194
 313195,Intrepid MediaWorks,1,,,,https://www.themoviedb.org/company/313195
 313196,Banijay Media Germany,1,Cologne,DE,,https://www.themoviedb.org/company/313196
@@ -262901,7 +262896,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 314309,Basavaraj Bellary Cinema,1,,,,https://www.themoviedb.org/company/314309
 314310,Film Tampa Bay,1,,,,https://www.themoviedb.org/company/314310
 314311,Mundo Extraño Productora Audiovisual,1,,,,https://www.themoviedb.org/company/314311
-314312,Momentumfilm,4,Berlin,DE,https://www.momentumfilm.com/,https://www.themoviedb.org/company/314312
+314312,Momentumfilm,4,Berlin,DE,,https://www.themoviedb.org/company/314312
 314313,MEM Studio,1,,,,https://www.themoviedb.org/company/314313
 314314,BST Film,1,,,,https://www.themoviedb.org/company/314314
 314315,Mostro Cine Coop,1,,,,https://www.themoviedb.org/company/314315
@@ -262926,7 +262921,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 314334,BDS,1,,CH,,https://www.themoviedb.org/company/314334
 314335,B-Filme,1,,,,https://www.themoviedb.org/company/314335
 314336,Marie Wald Produktion,0,,,,https://www.themoviedb.org/company/314336
-314337,Montavia Filmproduktion,1,Steinheim / Pullach,DE,https://montavia.de/de,https://www.themoviedb.org/company/314337
+314337,Montavia Filmproduktion,1,Steinheim / Pullach,DE,,https://www.themoviedb.org/company/314337
 314338,Ezgu Film,1,,,,https://www.themoviedb.org/company/314338
 314339,H&F Productions,0,,,,https://www.themoviedb.org/company/314339
 314340,Manolikas Studios,0,,,,https://www.themoviedb.org/company/314340
@@ -262962,3 +262957,116 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 314370,Nick Trojan Films,1,,,,https://www.themoviedb.org/company/314370
 314371,Thai PBS,0,,,,https://www.themoviedb.org/company/314371
 314372,Visual Story Productions,0,,,,https://www.themoviedb.org/company/314372
+314373,OU Film and Television Co,1,,,,https://www.themoviedb.org/company/314373
+314374,Kitara Film,1,,,,https://www.themoviedb.org/company/314374
+314375,Kyrumi Studio,1,"Hong Kong SAR, China",HK,,https://www.themoviedb.org/company/314375
+314376,Radial Films,1,,,,https://www.themoviedb.org/company/314376
+314377,Hong Kong Digital Entertainment Association,1,"c/o Firedog Creative Company Limited, 13B, Chiu Tat Factory Bldg., 108-110 King Fuk St., San Po Kong, Kowloon, Hong Kong SAR, China",HK,https://www.hkdea.org/,https://www.themoviedb.org/company/314377
+314378,KIN Studio,0,,,,https://www.themoviedb.org/company/314378
+314379,School Road Films,1,,,,https://www.themoviedb.org/company/314379
+314380,Alas de Cristal,1,,,,https://www.themoviedb.org/company/314380
+314381,Seeking4u,1,,,,https://www.themoviedb.org/company/314381
+314382,STUDIO BASSO,1,,,,https://www.themoviedb.org/company/314382
+314383,YOSHITAKA AMANO INC.,1,,,https://www.yoshitakaamanoinc.com,https://www.themoviedb.org/company/314383
+314384,H and P Projects,1,,,,https://www.themoviedb.org/company/314384
+314385,MemoArts Production,1,,,,https://www.themoviedb.org/company/314385
+314386,Barclay Video,1,,,,https://www.themoviedb.org/company/314386
+314387,Haddock Entertainment,1,,,,https://www.themoviedb.org/company/314387
+314388,OKProductions,1,,,,https://www.themoviedb.org/company/314388
+314389,Intoxic Studio Limited,1,"Unit 2311, New Trend Centre, 704 Prince Edward East, San Po Kong, Kowloon, Hong Kong SAR, China",HK,https://intoxic.com.hk/,https://www.themoviedb.org/company/314389
+314390,Innova Prodctions,1,,,,https://www.themoviedb.org/company/314390
+314391,Maga.Co Productions,1,,,,https://www.themoviedb.org/company/314391
+314392,Kanal 2,1,,,,https://www.themoviedb.org/company/314392
+314393,Shih Hsin University,1,"No. 1, Ln. 17, Sec. 1, Muzha Rd., Wenshan Dist., Taipei City 116, Taiwan",TW,https://english.web.shu.edu.tw/,https://www.themoviedb.org/company/314393
+314394,SYNJOYFILMS,0,,,,https://www.themoviedb.org/company/314394
+314395,欣乐影业,0,,,,https://www.themoviedb.org/company/314395
+314396,六宝文化,0,,,,https://www.themoviedb.org/company/314396
+314397,Davide Productions,1,,,,https://www.themoviedb.org/company/314397
+314398,Cineport media,0,,,,https://www.themoviedb.org/company/314398
+314399,F16 Productions,0,"Lille, France",FR,,https://www.themoviedb.org/company/314399
+314400,FremantleMedia,0,,,,https://www.themoviedb.org/company/314400
+314401,徐州百吉堂多媒体有限公司,0,,,,https://www.themoviedb.org/company/314401
+314402,台湾春水堂科技娱乐股份有限公司,0,,,,https://www.themoviedb.org/company/314402
+314403,Júpiter Filmes,1,,,,https://www.themoviedb.org/company/314403
+314404,And Cut!,0,,,,https://www.themoviedb.org/company/314404
+314405,Zona 4 Film,1,,,,https://www.themoviedb.org/company/314405
+314406,Risque Raw,0,,,,https://www.themoviedb.org/company/314406
+314407,Fondazione Trentina per l'autismo,1,,,,https://www.themoviedb.org/company/314407
+314408,Disney Channel Latinoamérica,1,,,,https://www.themoviedb.org/company/314408
+314409,Disney XD Latinoamérica,0,,,,https://www.themoviedb.org/company/314409
+314410,Buena Vista International Television,0,,,,https://www.themoviedb.org/company/314410
+314411,Filmové studio S.T.A.J.,1,,CZ,https://stajfilm.cz/index.html,https://www.themoviedb.org/company/314411
+314412,Cloud 9,0,,,,https://www.themoviedb.org/company/314412
+314413,uStudios,1,,,,https://www.themoviedb.org/company/314413
+314414,Onsen Production,1,,,,https://www.themoviedb.org/company/314414
+314415,Apeiron Filmes,1,,,,https://www.themoviedb.org/company/314415
+314416,Primal Screen,0,,,,https://www.themoviedb.org/company/314416
+314417,And Films,1,,ZA,,https://www.themoviedb.org/company/314417
+314418,Lamp-Post Productions,1,,GB,,https://www.themoviedb.org/company/314418
+314419,DDR Media,1,,,,https://www.themoviedb.org/company/314419
+314420,Kormenia Films,1,,,,https://www.themoviedb.org/company/314420
+314421,Metamorphosis Production,1,,,,https://www.themoviedb.org/company/314421
+314422,Hollywooot Film Group,1,,,,https://www.themoviedb.org/company/314422
+314423,SCUM CLAN,1,,,,https://www.themoviedb.org/company/314423
+314424,Poljjak Film,1,,,,https://www.themoviedb.org/company/314424
+314425,Richárd Testvér Kongói Betegekért Alapítvány,1,Budapest,HU,https://www.procongo.hu/index.php/hu/,https://www.themoviedb.org/company/314425
+314426,Ever After Pictures,0,,,,https://www.themoviedb.org/company/314426
+314427,Monkey Business Production,1,,,,https://www.themoviedb.org/company/314427
+314428,Cal Poly Humboldt Film,0,,,,https://www.themoviedb.org/company/314428
+314429,Thomas Ladenburger Filmproduktion,1,,,,https://www.themoviedb.org/company/314429
+314430,BNPtv,1,,,,https://www.themoviedb.org/company/314430
+314431,Treppe Film,1,,,,https://www.themoviedb.org/company/314431
+314432,Vermont Suitcase Films,1,,,,https://www.themoviedb.org/company/314432
+314433,Weekday Films,1,,,,https://www.themoviedb.org/company/314433
+314434,Film Cult,1,,,,https://www.themoviedb.org/company/314434
+314435,F.S.F - Production,1,,,,https://www.themoviedb.org/company/314435
+314436,Amaraa Studios,1,,,,https://www.themoviedb.org/company/314436
+314437,Con4table Films,1,,,,https://www.themoviedb.org/company/314437
+314438,Iguape Produções,1,,,,https://www.themoviedb.org/company/314438
+314439,How to Films,0,,,,https://www.themoviedb.org/company/314439
+314440,Marigold Productions,1,,,,https://www.themoviedb.org/company/314440
+314441,BRI Video,1,,,,https://www.themoviedb.org/company/314441
+314442,B104 productions,1,,,,https://www.themoviedb.org/company/314442
+314443,Mike Caron Productions,1,,,,https://www.themoviedb.org/company/314443
+314444,Orange Rose Productions,1,,,,https://www.themoviedb.org/company/314444
+314445,wcit Hartford news,0,,,,https://www.themoviedb.org/company/314445
+314446,LA MADRIGUERA ANIMATION STUDIO S.L.,0,,,,https://www.themoviedb.org/company/314446
+314447,AKA Productions Co.,1,,,,https://www.themoviedb.org/company/314447
+314448,"WDIC-TV Hartsford, Connecticut",1,,,,https://www.themoviedb.org/company/314448
+314449,DigBuildLive,1,,,,https://www.themoviedb.org/company/314449
+314450,CaptainSparklez,1,,,,https://www.themoviedb.org/company/314450
+314451,Centre City Media and Film Production,1,,CA,https://centrecitymedia.com/,https://www.themoviedb.org/company/314451
+314452,Ginger Road Productions,1,,,,https://www.themoviedb.org/company/314452
+314453,Ashhel23,1,,,,https://www.themoviedb.org/company/314453
+314454,Jamio Films,1,,,,https://www.themoviedb.org/company/314454
+314455,Rotten Whiskey Productions,1,,,,https://www.themoviedb.org/company/314455
+314456,Freeland Films,1,,,,https://www.themoviedb.org/company/314456
+314457,Fast Forward Films,5,,US,,https://www.themoviedb.org/company/314457
+314458,Allagni Films,1,,,,https://www.themoviedb.org/company/314458
+314459,Mar Media Collective Studio,1,,,,https://www.themoviedb.org/company/314459
+314460,Broad Brothers,1,,,,https://www.themoviedb.org/company/314460
+314461,Special Pill Productions,1,,,,https://www.themoviedb.org/company/314461
+314462,Kennedy Stock Productions,1,,,,https://www.themoviedb.org/company/314462
+314463,Play Cursos,1,,,,https://www.themoviedb.org/company/314463
+314464,Jornal RelevO,1,,,,https://www.themoviedb.org/company/314464
+314465,Get Down,1,,US,,https://www.themoviedb.org/company/314465
+314466,Marnel Pictures,1,,TR,,https://www.themoviedb.org/company/314466
+314467,Dread Castle,2,,,,https://www.themoviedb.org/company/314467
+314468,Felipe Fernandes,1,,,,https://www.themoviedb.org/company/314468
+314469,Film at Lincoln Center,1,New York City,US,https://www.filmlinc.org/,https://www.themoviedb.org/company/314469
+314470,Netflix (AR),0,,,,https://www.themoviedb.org/company/314470
+314471,脱口而出ABC,0,,,,https://www.themoviedb.org/company/314471
+314472,TRELIAZORI,2,,,,https://www.themoviedb.org/company/314472
+314473,Lighthouse Pictures Entertainment,1,,US,,https://www.themoviedb.org/company/314473
+314474,Dada Films,1,,US,,https://www.themoviedb.org/company/314474
+314475,C. S. ENTERPRISES,1,,,,https://www.themoviedb.org/company/314475
+314476,United Christian College (Kowloon East),1,"2 Lee On Lane, Kwun Tong, Kowloon, Hong Kong SAR, China",HK,https://www.uccke.edu.hk/,https://www.themoviedb.org/company/314476
+314477,红果,0,,,,https://www.themoviedb.org/company/314477
+314478,RK M Production,1,,NP,,https://www.themoviedb.org/company/314478
+314479,Hongguo Short Drama (红果短剧),0,,,,https://www.themoviedb.org/company/314479
+314480,Independent Pictures Sdn. Bhd.,1,,,,https://www.themoviedb.org/company/314480
+314481,Good Sheep Productions,1,,,,https://www.themoviedb.org/company/314481
+314482,中国中央电视台,0,,,,https://www.themoviedb.org/company/314482
+314483,Monsoon Pictures,0,,MY,,https://www.themoviedb.org/company/314483
+314484,Coconut Mind Film,0,,,,https://www.themoviedb.org/company/314484
+314485,Serpentiga Films,0,,,,https://www.themoviedb.org/company/314485
