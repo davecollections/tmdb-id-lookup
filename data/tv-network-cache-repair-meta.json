@@ -4,92 +4,100 @@
     "mode": "collect",
     "status": "completed",
     "reason": null,
-    "source_audit_date": "2026-10-15T13:22:41.944Z",
+    "source_audit_date": "2026-10-16T13:13:15.103Z",
     "audit_freshness": {
-      "audited_at": "2026-10-15T13:22:41.944Z",
-      "age_hours": 0.014719444444444445,
+      "audited_at": "2026-10-16T13:13:15.103Z",
+      "age_hours": 0.013688055555555556,
       "max_age_hours": 36,
       "export_month": "2026-10",
-      "export_fingerprint": "sha256:ac6903d267b7d1e3da1b4faa304fb79a1f013c6cd7fc90a1a1c06c181a0f9efa"
+      "export_fingerprint": "sha256:a791a3d77cfbb925a3a1859968c5b54c23b5e0c27d815a02f5bc0b52f6b0c130"
     },
     "month": "2026-10",
-    "export_fingerprint": "sha256:ac6903d267b7d1e3da1b4faa304fb79a1f013c6cd7fc90a1a1c06c181a0f9efa",
+    "export_fingerprint": "sha256:a791a3d77cfbb925a3a1859968c5b54c23b5e0c27d815a02f5bc0b52f6b0c130",
     "parser_semantic_version": "1.0.0",
     "binding_error": null,
     "max_repair_ids": 200,
     "cap": {
       "maximum": 200,
-      "requested": 4,
+      "requested": 7,
       "exceeded": false
     },
-    "requested_repair_count": 4,
+    "requested_repair_count": 7,
     "missing_requested": [
-      9569,
-      9570,
-      9571
+      9572,
+      9573,
+      9574,
+      9575,
+      9576,
+      9577,
+      9578
     ],
-    "missing_requested_count": 3,
-    "extra_requested": [
-      8651
-    ],
-    "extra_requested_count": 1,
+    "missing_requested_count": 7,
+    "extra_requested": [],
+    "extra_requested_count": 0,
     "processed_missing": [
-      9569,
-      9570,
-      9571
+      9572,
+      9573,
+      9574,
+      9575,
+      9576,
+      9577,
+      9578
     ],
-    "processed_missing_count": 3,
-    "processed_repair_count": 4,
+    "processed_missing_count": 7,
+    "processed_repair_count": 7,
     "added": [
-      9569,
-      9570,
-      9571
+      9572,
+      9573,
+      9574,
+      9575,
+      9576,
+      9577,
+      9578
     ],
-    "added_count": 3,
-    "removed": [
-      8651
-    ],
-    "removed_count": 1,
+    "added_count": 7,
+    "removed": [],
+    "removed_count": 0,
     "not_found": [],
     "not_found_count": 0,
     "failed": [],
     "failed_count": 0,
     "request_plan": {
-      "details_requests": 3,
-      "discover_requests": 3,
-      "base_requests": 6
+      "details_requests": 7,
+      "discover_requests": 7,
+      "base_requests": 14
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "38742192026-1-cache-repair",
-      "reservation_sha256": "ee011d858a79cf8168d953ee615aaf40fdfda030c117dbda4816618b740bad42",
-      "utc_date": "2026-10-15",
+      "reservation_id": "38906196231-1-cache-repair",
+      "reservation_sha256": "0abc1b12ea8923fded41a77c32f61cee822bd06d63b301f8f33cbb077731561f",
+      "utc_date": "2026-10-16",
       "planned_month": "2026-10",
       "workflow": "Daily Capped Repair Cache From Audit",
-      "run_id": "38742192026",
+      "run_id": "38906196231",
       "run_attempt": "1",
       "job": "repair-network",
       "allocation_key": "network_repair",
       "request_class": "network-repair",
       "target_dimension": "network-series",
       "allowance": 2000,
-      "attempts_used": 6,
-      "unused_allowance": 1994,
-      "first_attempt_at": "2026-10-15T13:23:34.948Z",
-      "last_attempt_at": "2026-10-15T13:23:35.736Z",
+      "attempts_used": 14,
+      "unused_allowance": 1986,
+      "first_attempt_at": "2026-10-16T13:14:04.398Z",
+      "last_attempt_at": "2026-10-16T13:14:06.440Z",
       "by_host": {
-        "api.themoviedb.org": 6,
+        "api.themoviedb.org": 14,
         "files.tmdb.org": 0
       },
       "by_status_or_outcome": {
-        "200": 6
+        "200": 14
       },
       "retries": 0
     },
-    "total_cached": 5659,
+    "total_cached": 5666,
     "skipped": false,
-    "started_at": "2026-10-15T13:23:34.933Z",
-    "finished_at": "2026-10-15T13:23:35.964Z",
+    "started_at": "2026-10-16T13:14:04.379Z",
+    "finished_at": "2026-10-16T13:14:06.676Z",
     "network_count_retry": {
       "candidates": 0,
       "selected": 0,
