@@ -1,7 +1,7 @@
 import { performance } from "node:perf_hooks";
 
 // Measures sequential phases without imposing deadlines or changing their results.
-export function createValidationTiming(scope, { now = () => performance.now(), log = console.log } = {}) {
+export function createValidationTiming(scope, { now = () => performance.now(), log = console.log, onStage } = {}) {
 	const totals = new Map();
 	const started = now();
 	let since = started;
@@ -18,6 +18,7 @@ export function createValidationTiming(scope, { now = () => performance.now(), l
 			if (finished) return;
 			record();
 			current = label;
+			try { onStage?.(label); } catch { /* Optional diagnostics cannot affect validation. */ }
 		},
 		finish() {
 			if (finished) return;
