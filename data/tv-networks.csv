@@ -1755,7 +1755,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 3052,Metro,1,,PL,,https://www.themoviedb.org/network/3052
 3053,TV Tupi,106,"São Paulo, São Paulo, Brazil",BR,,https://www.themoviedb.org/network/3053
 3055,ztele.com,1,,CA,,https://www.themoviedb.org/network/3055
-3056,Animation,0,,,,https://www.themoviedb.org/network/3056
 3057,trvl,0,,,,https://www.themoviedb.org/network/3057
 3058,Союзмультфильм,0,,,,https://www.themoviedb.org/network/3058
 3059,Bell Fibe TV1,16,,CA,,https://www.themoviedb.org/network/3059
@@ -5670,5 +5669,10 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9583,2021,0,,,,https://www.themoviedb.org/network/9583
 9584,Feliz 7play español,1,"Brasília, Distrito Federal - Brasil",BR,,https://www.themoviedb.org/network/9584
 9585,Wydawnictwo Niezwykłe,1,,,,https://www.themoviedb.org/network/9585
-9586,Youcine,3,São Paulo - Brasil,BR,https://www.youcine.net/,https://www.themoviedb.org/network/9586
-9587,GoldfishFun.com,1,,US,http://goldfishfun.com,https://www.themoviedb.org/network/9587
+9586,Youcine,3,São Paulo - Brasil,BR,,https://www.themoviedb.org/network/9586
+9587,GoldfishFun.com,1,,US,,https://www.themoviedb.org/network/9587
+9588,ARTE,1,,,,https://www.themoviedb.org/network/9588
+9589,ARTE,1,,,,https://www.themoviedb.org/network/9589
+9590,The U,1,"Chicago, Illinois",US,https://www.wciu.com/,https://www.themoviedb.org/network/9590
+9591,Bilibili,0,,,,https://www.themoviedb.org/network/9591
+9592,Channel 7,0,,,,https://www.themoviedb.org/network/9592
