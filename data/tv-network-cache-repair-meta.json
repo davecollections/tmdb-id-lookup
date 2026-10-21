@@ -4,98 +4,94 @@
     "mode": "collect",
     "status": "completed",
     "reason": null,
-    "source_audit_date": "2026-10-20T13:32:24.307Z",
+    "source_audit_date": "2026-10-21T13:44:08.103Z",
     "audit_freshness": {
-      "audited_at": "2026-10-20T13:32:24.307Z",
-      "age_hours": 0.013014444444444445,
+      "audited_at": "2026-10-21T13:44:08.103Z",
+      "age_hours": 0.013205555555555555,
       "max_age_hours": 36,
       "export_month": "2026-10",
-      "export_fingerprint": "sha256:37cd2fa7f56b95e16ea965710e0e1e6ca96947047dad42219b96dda6d240a42d"
+      "export_fingerprint": "sha256:0e8c593c6b1b5adf6740fbf8a8f190535388ce25e8f2e0a505316d03107ebbca"
     },
     "month": "2026-10",
-    "export_fingerprint": "sha256:37cd2fa7f56b95e16ea965710e0e1e6ca96947047dad42219b96dda6d240a42d",
+    "export_fingerprint": "sha256:0e8c593c6b1b5adf6740fbf8a8f190535388ce25e8f2e0a505316d03107ebbca",
     "parser_semantic_version": "1.0.0",
     "binding_error": null,
     "max_repair_ids": 200,
     "cap": {
       "maximum": 200,
-      "requested": 6,
+      "requested": 5,
       "exceeded": false
     },
-    "requested_repair_count": 6,
+    "requested_repair_count": 5,
     "missing_requested": [
-      9588,
-      9589,
-      9590,
-      9591,
-      9592
+      9593,
+      9594,
+      9595
     ],
-    "missing_requested_count": 5,
+    "missing_requested_count": 3,
     "extra_requested": [
-      3056
+      8009,
+      9487
     ],
-    "extra_requested_count": 1,
+    "extra_requested_count": 2,
     "processed_missing": [
-      9588,
-      9589,
-      9590,
-      9591,
-      9592
+      9593,
+      9594,
+      9595
     ],
-    "processed_missing_count": 5,
-    "processed_repair_count": 6,
+    "processed_missing_count": 3,
+    "processed_repair_count": 5,
     "added": [
-      9588,
-      9589,
-      9590,
-      9591,
-      9592
+      9593,
+      9594,
+      9595
     ],
-    "added_count": 5,
+    "added_count": 3,
     "removed": [
-      3056
+      8009,
+      9487
     ],
-    "removed_count": 1,
+    "removed_count": 2,
     "not_found": [],
     "not_found_count": 0,
     "failed": [],
     "failed_count": 0,
     "request_plan": {
-      "details_requests": 5,
-      "discover_requests": 5,
-      "base_requests": 10
+      "details_requests": 3,
+      "discover_requests": 3,
+      "base_requests": 6
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "39431278985-1-cache-repair",
-      "reservation_sha256": "78669d43d2d332d36ee64adc85d4f7e19da42f809d0ee4ad37ee1d3b863d8811",
-      "utc_date": "2026-10-20",
+      "reservation_id": "39610603529-1-cache-repair",
+      "reservation_sha256": "7592c10256db5069f6a8e07243cf2c1cdad6914be39de93cb9ed43bbb4468425",
+      "utc_date": "2026-10-21",
       "planned_month": "2026-10",
       "workflow": "Daily Capped Repair Cache From Audit",
-      "run_id": "39431278985",
+      "run_id": "39610603529",
       "run_attempt": "1",
       "job": "repair-network",
       "allocation_key": "network_repair",
       "request_class": "network-repair",
       "target_dimension": "network-series",
       "allowance": 2000,
-      "attempts_used": 10,
-      "unused_allowance": 1990,
-      "first_attempt_at": "2026-10-20T13:33:11.172Z",
-      "last_attempt_at": "2026-10-20T13:33:11.975Z",
+      "attempts_used": 6,
+      "unused_allowance": 1994,
+      "first_attempt_at": "2026-10-21T13:44:55.661Z",
+      "last_attempt_at": "2026-10-21T13:44:56.081Z",
       "by_host": {
-        "api.themoviedb.org": 10,
+        "api.themoviedb.org": 6,
         "files.tmdb.org": 0
       },
       "by_status_or_outcome": {
-        "200": 10
+        "200": 6
       },
       "retries": 0
     },
-    "total_cached": 5677,
+    "total_cached": 5678,
     "skipped": false,
-    "started_at": "2026-10-20T13:33:11.158Z",
-    "finished_at": "2026-10-20T13:33:12.128Z",
+    "started_at": "2026-10-21T13:44:55.642Z",
+    "finished_at": "2026-10-21T13:44:56.245Z",
     "network_count_retry": {
       "candidates": 0,
       "selected": 0,
