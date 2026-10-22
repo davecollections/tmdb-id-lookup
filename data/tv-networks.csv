@@ -3762,7 +3762,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7013,KTSL,1,"Los Angeles, California",US,,https://www.themoviedb.org/network/7013
 7015,RTF,0,,,,https://www.themoviedb.org/network/7015
 7018,Hubei Television,19,,CN,,https://www.themoviedb.org/network/7018
-7020,DEE HUP HOUSE(TH),0,,TH,,https://www.themoviedb.org/network/7020
 7021,Canal+,3,,MM,,https://www.themoviedb.org/network/7021
 7022,Idol Romance (KR),0,,,,https://www.themoviedb.org/network/7022
 7024,Yle Teema & Fem,4,,FI,,https://www.themoviedb.org/network/7024
@@ -5657,7 +5656,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9573,Viu,0,,,,https://www.themoviedb.org/network/9573
 9574,Sony VIZHA,3,,IN,,https://www.themoviedb.org/network/9574
 9575,Ahasa TV,1,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9575
-9576,Plex,1,,US,,https://www.themoviedb.org/network/9576
 9577,PBS,0,,,,https://www.themoviedb.org/network/9577
 9578,CCTV,1,,,,https://www.themoviedb.org/network/9578
 9579,TV400,1,,SE,,https://www.themoviedb.org/network/9579
@@ -5667,7 +5665,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9583,2021,0,,,,https://www.themoviedb.org/network/9583
 9584,Feliz 7play español,1,"Brasília, Distrito Federal - Brasil",BR,,https://www.themoviedb.org/network/9584
 9585,Wydawnictwo Niezwykłe,1,,,,https://www.themoviedb.org/network/9585
-9586,Youcine,3,São Paulo - Brasil,BR,,https://www.themoviedb.org/network/9586
 9587,GoldfishFun.com,1,,US,,https://www.themoviedb.org/network/9587
 9588,ARTE,1,,,,https://www.themoviedb.org/network/9588
 9589,ARTE,1,,,,https://www.themoviedb.org/network/9589
@@ -5677,3 +5674,13 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9593,ZDF,0,,,,https://www.themoviedb.org/network/9593
 9594,RBS TV,1,,,,https://www.themoviedb.org/network/9594
 9595,TV Jornal,1,,,,https://www.themoviedb.org/network/9595
+9596,晴祥文化,1,,,,https://www.themoviedb.org/network/9596
+9597,YOOUSI 优时文化（优时映画）,2,,,,https://www.themoviedb.org/network/9597
+9598,优时文化,1,,,,https://www.themoviedb.org/network/9598
+9599,BBC Three (Online),93,"London, England",GB,,https://www.themoviedb.org/network/9599
+9600,National Radio Televion Foundation (GR),0,,,,https://www.themoviedb.org/network/9600
+9601,Canal 6,1,Alameda Dr. Manuel Araujo Km. 6½ San Salvador,SV,,https://www.themoviedb.org/network/9601
+9602,Color Visión,1,"Santo Domingo, Dominican Republic",DO,http://colorvision.com.do,https://www.themoviedb.org/network/9602
+9603,NBC,1,,NA,http://www.nbc.na,https://www.themoviedb.org/network/9603
+9604,TTT Limited,1,,TT,http://www.ttt.live/,https://www.themoviedb.org/network/9604
+9605,CyBC,1,,CY,,https://www.themoviedb.org/network/9605
