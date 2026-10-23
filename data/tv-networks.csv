@@ -5680,7 +5680,10 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9599,BBC Three (Online),93,"London, England",GB,,https://www.themoviedb.org/network/9599
 9600,National Radio Televion Foundation (GR),0,,,,https://www.themoviedb.org/network/9600
 9601,Canal 6,1,Alameda Dr. Manuel Araujo Km. 6½ San Salvador,SV,,https://www.themoviedb.org/network/9601
-9602,Color Visión,1,"Santo Domingo, Dominican Republic",DO,http://colorvision.com.do,https://www.themoviedb.org/network/9602
-9603,NBC,1,,NA,http://www.nbc.na,https://www.themoviedb.org/network/9603
-9604,TTT Limited,1,,TT,http://www.ttt.live/,https://www.themoviedb.org/network/9604
+9602,Color Visión,1,"Santo Domingo, Dominican Republic",DO,,https://www.themoviedb.org/network/9602
+9603,NBC,1,,NA,,https://www.themoviedb.org/network/9603
+9604,TTT Limited,1,,TT,,https://www.themoviedb.org/network/9604
 9605,CyBC,1,,CY,,https://www.themoviedb.org/network/9605
+9607,Sky Show,1,,CH,,https://www.themoviedb.org/network/9607
+9608,TREND Network,1,,,,https://www.themoviedb.org/network/9608
+9609,Plex,0,Plex,US,https://watch.plex.tv/me,https://www.themoviedb.org/network/9609
