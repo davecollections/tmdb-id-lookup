@@ -4215,7 +4215,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7689,Ленфильм,0,,,,https://www.themoviedb.org/network/7689
 7690,digimovieplex,1,,IN,,https://www.themoviedb.org/network/7690
 7692,TVB Plus,7,,HK,,https://www.themoviedb.org/network/7692
-7693,BBC THR,0,,,,https://www.themoviedb.org/network/7693
 7694,WGBH,2,"Boston, Massachusetts",US,,https://www.themoviedb.org/network/7694
 7698,Epic +,1,,RU,,https://www.themoviedb.org/network/7698
 7699,mtvU,1,,US,,https://www.themoviedb.org/network/7699
@@ -5686,4 +5685,10 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9605,CyBC,1,,CY,,https://www.themoviedb.org/network/9605
 9607,Sky Show,1,,CH,,https://www.themoviedb.org/network/9607
 9608,TREND Network,1,,,,https://www.themoviedb.org/network/9608
-9609,Plex,0,Plex,US,https://watch.plex.tv/me,https://www.themoviedb.org/network/9609
+9610,福州二套影视频道,1,,,,https://www.themoviedb.org/network/9610
+9611,重庆原典文化传播有限责任公司 四方源创文化传播有限公司,1,,,,https://www.themoviedb.org/network/9611
+9612,江苏影视频道,1,,,,https://www.themoviedb.org/network/9612
+9613,Viewster,1,,,,https://www.themoviedb.org/network/9613
+9614,Powerpuff Films,0,,,,https://www.themoviedb.org/network/9614
+9615,CCTV Canal 9,1,,,,https://www.themoviedb.org/network/9615
+9616,湖南广播电视台电视剧频道,1,,,,https://www.themoviedb.org/network/9616
