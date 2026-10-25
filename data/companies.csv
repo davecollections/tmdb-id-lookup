@@ -3963,7 +3963,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 4199,Monument Pictures,4,,,,https://www.themoviedb.org/company/4199
 4200,Dongoong Arts Center,1,,,,https://www.themoviedb.org/company/4200
 4201,VeryMuchSo Productions,5,"Sheffield, England",GB,,https://www.themoviedb.org/company/4201
-4202,Hotspur Film Productions Ltd.,1,,,,https://www.themoviedb.org/company/4202
 4203,Elton Productions,3,,,,https://www.themoviedb.org/company/4203
 4204,Benedict Bogeans Production,2,,,,https://www.themoviedb.org/company/4204
 4205,Groundswell Productions,21,"Beverly Hills, California",US,,https://www.themoviedb.org/company/4205
@@ -13930,7 +13929,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 16304,Grapevine Video,7,,,,https://www.themoviedb.org/company/16304
 16305,Premier Productions,3,,,,https://www.themoviedb.org/company/16305
 16306,stone angels.,0,,,,https://www.themoviedb.org/company/16306
-16307,yrf entertainment,0,,,,https://www.themoviedb.org/company/16307
 16308,Jeni Productions,2,,,,https://www.themoviedb.org/company/16308
 16309,Inter Planetary Productions,2,,,,https://www.themoviedb.org/company/16309
 16310,Amber Entertainment,4,"London, England",GB,,https://www.themoviedb.org/company/16310
@@ -91152,7 +91150,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 127100,NouChi Productions,1,,,,https://www.themoviedb.org/company/127100
 127102,Belo Amigo Video,0,,,,https://www.themoviedb.org/company/127102
 127103,Dimsum,0,,,,https://www.themoviedb.org/company/127103
-127105,yrf,0,,,,https://www.themoviedb.org/company/127105
 127106,Factory Bareback,0,,US,,https://www.themoviedb.org/company/127106
 127107,von Tagen International,1,,,,https://www.themoviedb.org/company/127107
 127109,Krage Film,1,,DK,,https://www.themoviedb.org/company/127109
@@ -164900,7 +164897,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 210115,Robert Simonds/Brad Grey,0,,,,https://www.themoviedb.org/company/210115
 210116,The Producer Circle Co.,0,,,,https://www.themoviedb.org/company/210116
 210118,Coach Films,1,,GB,,https://www.themoviedb.org/company/210118
-210119,CAA Media Finance,0,,,,https://www.themoviedb.org/company/210119
 210120,Miramax International,1,,US,,https://www.themoviedb.org/company/210120
 210121,Mirror Image Productions,1,,,,https://www.themoviedb.org/company/210121
 210123,Spectro Produksies,0,,,,https://www.themoviedb.org/company/210123
@@ -229677,7 +229673,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 279713,"JOCMedia & Entertainment, LLC",1,,,,https://www.themoviedb.org/company/279713
 279714,De Milo,0,,,,https://www.themoviedb.org/company/279714
 279715,Redmark Films,1,,,,https://www.themoviedb.org/company/279715
-279716,Actors at Work Productions,1,,,,https://www.themoviedb.org/company/279716
 279717,Garimpo Filmes,1,,,,https://www.themoviedb.org/company/279717
 279718,Avalanche Productions,1,,,,https://www.themoviedb.org/company/279718
 279719,Voice of God Recordings,1,,,,https://www.themoviedb.org/company/279719
@@ -257860,7 +257855,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 309247,NetShort,0,,,,https://www.themoviedb.org/company/309247
 309249,Jayashree Movie Production,1,,,,https://www.themoviedb.org/company/309249
 309250,MUGA,1,,,,https://www.themoviedb.org/company/309250
-309251,CAA Media Finance,1,,,,https://www.themoviedb.org/company/309251
 309252,Bio Central,1,,,,https://www.themoviedb.org/company/309252
 309253,Nisero Production,1,,,,https://www.themoviedb.org/company/309253
 309254,北京真乐道文化传播有限公司,0,,,,https://www.themoviedb.org/company/309254
@@ -263917,7 +263911,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 315420,Naga VXS,2,,,,https://www.themoviedb.org/company/315420
 315421,Perkasa Filem,1,,,,https://www.themoviedb.org/company/315421
 315422,Clustr Films,1,,FR,,https://www.themoviedb.org/company/315422
-315423,Holding Thumbs Production,2,"Cape Town, South Africa",ZA,https://holdingthumbsproductions.co.za/,https://www.themoviedb.org/company/315423
+315423,Holding Thumbs Production,2,"Cape Town, South Africa",ZA,,https://www.themoviedb.org/company/315423
 315424,Friends Production House,1,,IN,,https://www.themoviedb.org/company/315424
 315425,Canberra College,1,,,,https://www.themoviedb.org/company/315425
 315426,goon gang productions,1,,,,https://www.themoviedb.org/company/315426
@@ -263992,10 +263986,10 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 315495,Wolf Lore Cinema Ltd.,1,,,,https://www.themoviedb.org/company/315495
 315496,Deojon Film,1,,KR,,https://www.themoviedb.org/company/315496
 315497,Boys' Bible Study,1,,,,https://www.themoviedb.org/company/315497
-315498,Verve Ventures,1,Zurich,CH,https://www.verve.vc,https://www.themoviedb.org/company/315498
+315498,Verve Ventures,1,Zurich,CH,,https://www.themoviedb.org/company/315498
 315499,Little Woman Films,0,,,,https://www.themoviedb.org/company/315499
 315500,Night Owl Films,0,,,,https://www.themoviedb.org/company/315500
-315501,Caffeine,1,"New York City, New York",US,https://caffeine.global,https://www.themoviedb.org/company/315501
+315501,Caffeine,1,"New York City, New York",US,,https://www.themoviedb.org/company/315501
 315502,Seni Sense 7,1,,,,https://www.themoviedb.org/company/315502
 315503,Rousing Muses Pictures,1,,,,https://www.themoviedb.org/company/315503
 315504,北京野鬃广告传媒有限公司,0,,,,https://www.themoviedb.org/company/315504
@@ -264005,3 +263999,118 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 315508,Nine Film,1,,KR,,https://www.themoviedb.org/company/315508
 315509,Air Crew Production,1,,NP,,https://www.themoviedb.org/company/315509
 315510,Cineventure 10,1,,,,https://www.themoviedb.org/company/315510
+315511,マジックミラー号,0,,,,https://www.themoviedb.org/company/315511
+315512,OLM Digital,1,,,,https://www.themoviedb.org/company/315512
+315513,Dominatrix 6,0,,,,https://www.themoviedb.org/company/315513
+315514,Muzeum Mazowieckie w Płocku,1,Płock,PL,,https://www.themoviedb.org/company/315514
+315515,Suveksha Films Pvt. Ltd.,1,,NP,,https://www.themoviedb.org/company/315515
+315516,Nerve Creations [SE],1,,,,https://www.themoviedb.org/company/315516
+315517,Himalaya Film,1,,US,,https://www.themoviedb.org/company/315517
+315518,Bikash Raj Acharya Film Prodution,1,,NP,,https://www.themoviedb.org/company/315518
+315519,Germania,0,,,,https://www.themoviedb.org/company/315519
+315520,SSR Entertainment,1,,IN,,https://www.themoviedb.org/company/315520
+315521,Ruluc Studios,1,,,,https://www.themoviedb.org/company/315521
+315522,ATTI BOYS,1,,,,https://www.themoviedb.org/company/315522
+315523,Stuttgart Ballet,0,,,,https://www.themoviedb.org/company/315523
+315524,Hardy Fools,0,,,,https://www.themoviedb.org/company/315524
+315525,SparklingPlay,0,,,,https://www.themoviedb.org/company/315525
+315526,MrTMMProductions,1,,,,https://www.themoviedb.org/company/315526
+315527,ComeandCKCK,0,,,,https://www.themoviedb.org/company/315527
+315528,Akimoto Yasushi Office,1,,JP,,https://www.themoviedb.org/company/315528
+315529,DIAMOND,1,,JP,https://www.diamond.co.jp/,https://www.themoviedb.org/company/315529
+315530,Alfa Pictures,1,,,,https://www.themoviedb.org/company/315530
+315531,Comú de Sant Julià de Lòria,1,,,,https://www.themoviedb.org/company/315531
+315532,Clúster Audiovisual de Catalunya,1,,,,https://www.themoviedb.org/company/315532
+315533,Andorra Business,1,,,,https://www.themoviedb.org/company/315533
+315534,Hife Andorra,1,,,,https://www.themoviedb.org/company/315534
+315535,AKH Ventures,1,,,,https://www.themoviedb.org/company/315535
+315536,Impuls Film,1,,,,https://www.themoviedb.org/company/315536
+315537,Studio Form Telewizyjnych (PL),1,,,,https://www.themoviedb.org/company/315537
+315538,Hwantasy Entertainment,1,,,,https://www.themoviedb.org/company/315538
+315539,DÓMfilm,1,,CZ,https://www.domfilm.cz/,https://www.themoviedb.org/company/315539
+315540,Ab Atelier Apollo Oy,1,,,,https://www.themoviedb.org/company/315540
+315541,MA&TH Entertainment Network,1,,,,https://www.themoviedb.org/company/315541
+315542,Street Stories Films,1,,ZA,,https://www.themoviedb.org/company/315542
+315543,ArTVision (PL),1,,,,https://www.themoviedb.org/company/315543
+315544,Children's Productions,1,,,,https://www.themoviedb.org/company/315544
+315545,Ugly Duckling Studios,1,,,,https://www.themoviedb.org/company/315545
+315546,Fowl Fight Productions,1,,,,https://www.themoviedb.org/company/315546
+315547,Fleecey,1,,,,https://www.themoviedb.org/company/315547
+315548,Eldee Films (PH),2,,,,https://www.themoviedb.org/company/315548
+315549,I Am Charlie,2,,,,https://www.themoviedb.org/company/315549
+315550,Just a Bit Productions,1,,,,https://www.themoviedb.org/company/315550
+315551,Intercept Brasil,0,,,,https://www.themoviedb.org/company/315551
+315552,Main Street Entertainment Productions,1,,,,https://www.themoviedb.org/company/315552
+315553,Tri-Rahn Productions,1,,,,https://www.themoviedb.org/company/315553
+315554,YAMA Cine,1,,,,https://www.themoviedb.org/company/315554
+315555,Little Pictures,1,,,,https://www.themoviedb.org/company/315555
+315556,Frame of Two,1,,,,https://www.themoviedb.org/company/315556
+315557,Ortiz Entertainment,1,,,,https://www.themoviedb.org/company/315557
+315558,Twisted Stickman Productions,1,,,,https://www.themoviedb.org/company/315558
+315559,Stills Studios,0,,,,https://www.themoviedb.org/company/315559
+315560,Starkid,0,,,,https://www.themoviedb.org/company/315560
+315561,University of Ulster,1,,,,https://www.themoviedb.org/company/315561
+315562,Lucki,1,,,,https://www.themoviedb.org/company/315562
+315563,Lionhead Movies,1,,,,https://www.themoviedb.org/company/315563
+315564,Jamin Heat,1,,,,https://www.themoviedb.org/company/315564
+315565,Blue Lab Productions,1,,,,https://www.themoviedb.org/company/315565
+315566,[trigger warning],1,,,,https://www.themoviedb.org/company/315566
+315567,Fotoaura Institute of Photography,0,,,,https://www.themoviedb.org/company/315567
+315568,Taichung Art Museum,0,,,,https://www.themoviedb.org/company/315568
+315569,Happy Campers Productions,1,,,,https://www.themoviedb.org/company/315569
+315570,Walkabout Asia,1,,,,https://www.themoviedb.org/company/315570
+315571,Darbininkai,1,,,,https://www.themoviedb.org/company/315571
+315572,Riverside Stories,1,,,,https://www.themoviedb.org/company/315572
+315573,Dari Dapur,1,,,,https://www.themoviedb.org/company/315573
+315574,Young Lives,1,,,,https://www.themoviedb.org/company/315574
+315575,Katha Mandala Productions,1,,,,https://www.themoviedb.org/company/315575
+315576,Mirumir Studio,1,,,,https://www.themoviedb.org/company/315576
+315577,Nirantar Trust,1,,,,https://www.themoviedb.org/company/315577
+315578,The Third Eye,1,,,,https://www.themoviedb.org/company/315578
+315579,Lina Films,1,,,,https://www.themoviedb.org/company/315579
+315580,Studio Hans Op de Beeck,1,,,,https://www.themoviedb.org/company/315580
+315581,جينا فيلم,1,,,,https://www.themoviedb.org/company/315581
+315582,Altitude Television,0,,GB,,https://www.themoviedb.org/company/315582
+315583,Cinematic Labs,1,,,,https://www.themoviedb.org/company/315583
+315584,Kinkkrew,0,,,,https://www.themoviedb.org/company/315584
+315585,Slutet,2,,SE,https://slutet.com,https://www.themoviedb.org/company/315585
+315586,HS Film,1,,,,https://www.themoviedb.org/company/315586
+315587,Slutet,0,,,,https://www.themoviedb.org/company/315587
+315588,StarKid Productions,0,,,,https://www.themoviedb.org/company/315588
+315589,Emerald Triangle Girls,0,California,US,http://www.emeraldtrianglegirls.com,https://www.themoviedb.org/company/315589
+315590,Mega Pug Productions,1,,,,https://www.themoviedb.org/company/315590
+315591,Romeo Studios,1,,,,https://www.themoviedb.org/company/315591
+315592,Czołówka Filmowa Wojska Polskiego (PL),3,,,,https://www.themoviedb.org/company/315592
+315593,HR VISIONS,1,,,,https://www.themoviedb.org/company/315593
+315594,Thirdstreet,1,,,,https://www.themoviedb.org/company/315594
+315595,A suitcase and a dream,1,,,,https://www.themoviedb.org/company/315595
+315596,Quartermaster Creative,1,,,,https://www.themoviedb.org/company/315596
+315597,Epode Ltd.,0,,,,https://www.themoviedb.org/company/315597
+315598,Agora,0,,,,https://www.themoviedb.org/company/315598
+315599,Xworks,0,,,,https://www.themoviedb.org/company/315599
+315600,Estudios Cinematográficos,1,,,,https://www.themoviedb.org/company/315600
+315601,Netwood Pictures Production,1,,,,https://www.themoviedb.org/company/315601
+315602,Subjective Objective,1,,,,https://www.themoviedb.org/company/315602
+315603,Fata Morgana,1,,,,https://www.themoviedb.org/company/315603
+315604,La Vida y El Cine Producciones,1,,,,https://www.themoviedb.org/company/315604
+315605,Dos Goats,1,,,,https://www.themoviedb.org/company/315605
+315606,Mirror Studios,1,,,,https://www.themoviedb.org/company/315606
+315607,Canary Productions,3,,,,https://www.themoviedb.org/company/315607
+315608,Sean Sprawling,1,,,,https://www.themoviedb.org/company/315608
+315609,Idaho Films,1,,,,https://www.themoviedb.org/company/315609
+315610,Astral Epoch International Corporation,1,,,,https://www.themoviedb.org/company/315610
+315611,WendlWood Productions,1,,,,https://www.themoviedb.org/company/315611
+315612,A Couple of Idiots Productions,1,,,,https://www.themoviedb.org/company/315612
+315613,Sily Film,0,,,,https://www.themoviedb.org/company/315613
+315614,浙江永康炫酷影视文化有限公司,1,,,,https://www.themoviedb.org/company/315614
+315615,济南鸿景文化产业有限公司,1,,,,https://www.themoviedb.org/company/315615
+315616,GRACE,0,,,,https://www.themoviedb.org/company/315616
+315617,Trem Feliz,0,,,,https://www.themoviedb.org/company/315617
+315618,ACB Vídeos,0,,,,https://www.themoviedb.org/company/315618
+315619,La Factoría,0,,,,https://www.themoviedb.org/company/315619
+315620,Metro Entertainment Film Department,1,,JP,,https://www.themoviedb.org/company/315620
+315621,New World Spirits Film Creation,1,,,,https://www.themoviedb.org/company/315621
+315622,Kilusan Studios,1,,,,https://www.themoviedb.org/company/315622
+315623,"Sampaguita Films, Inc.",1,,,,https://www.themoviedb.org/company/315623
+315624,Fou Films,1,United States,US,,https://www.themoviedb.org/company/315624
+315625,Character Tales,1,,,,https://www.themoviedb.org/company/315625
