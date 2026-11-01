@@ -4585,7 +4585,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8234,Globoplay Novelas,1,"Rio de Janeiro, Rio de Janeiro, Brazil",BR,,https://www.themoviedb.org/network/8234
 8235,Bel RTL,1,,BE,,https://www.themoviedb.org/network/8235
 8236,RTL District,4,Schaerbeek,BE,,https://www.themoviedb.org/network/8236
-8250,APPP,1,,,,https://www.themoviedb.org/network/8250
 8252,Henlagt tv,6,,,,https://www.themoviedb.org/network/8252
 8254,超级微信,1,,,,https://www.themoviedb.org/network/8254
 8255,CNT,3,"Curitiba, Paraná, Brasil",BR,,https://www.themoviedb.org/network/8255
@@ -4974,7 +4973,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8782,TUTV Puerto Rico,3,,PR,,https://www.themoviedb.org/network/8782
 8783,Shemaroooo,0,,,,https://www.themoviedb.org/network/8783
 8784,Atrangi,0,,,,https://www.themoviedb.org/network/8784
-8785,Astro,0,,,,https://www.themoviedb.org/network/8785
 8787,Studio Littleangel,0,,,,https://www.themoviedb.org/network/8787
 8788,Studio Littleangel,0,,,,https://www.themoviedb.org/network/8788
 8789,Sky Open,4,,NZ,,https://www.themoviedb.org/network/8789
@@ -5709,6 +5707,8 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9635,https://superstartv.rs,0,,,,https://www.themoviedb.org/network/9635
 9636,BBC One,0,,,,https://www.themoviedb.org/network/9636
 9637,Patreon,1,,,,https://www.themoviedb.org/network/9637
-9638,Disney Channel(TW),1,臺灣台北市中正區襄陽路1號(舊址)[1] 台北市內湖區堤頂大道2段183號富邦東京企業總部大樓11樓（福斯傳媒集團台北內湖大樓）(現址),TW,https://www.disney.com.tw/disney-channel,https://www.themoviedb.org/network/9638
+9638,Disney Channel(TW),1,臺灣台北市中正區襄陽路1號(舊址)[1] 台北市內湖區堤頂大道2段183號富邦東京企業總部大樓11樓（福斯傳媒集團台北內湖大樓）(現址),TW,,https://www.themoviedb.org/network/9638
 9639,iqiyi,0,,,,https://www.themoviedb.org/network/9639
 9640,Cctv8,0,,,,https://www.themoviedb.org/network/9640
+9641,TV11,1,,SE,,https://www.themoviedb.org/network/9641
+9642,Mun Tv,1,,,,https://www.themoviedb.org/network/9642
