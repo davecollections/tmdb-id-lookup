@@ -1,56 +1,56 @@
 {
   "last_scan": {
     "mode": "collect",
-    "export_date": "11_01_2026",
-    "export_total_ids": 264954,
-    "offset": 0,
-    "limit": 18925,
-    "actual_limit": 18925,
-    "checked": 18925,
-    "found": 18925,
+    "export_date": "11_02_2026",
+    "export_total_ids": 265056,
+    "offset": 18932,
+    "limit": 18933,
+    "actual_limit": 18933,
+    "checked": 18933,
+    "found": 18933,
     "missing": 0,
     "total_cached": 264211,
     "month": "2026-11",
-    "export_fingerprint": "sha256:58e0853d0e97dda86d9fc768901ae05b97c299d386e6a6bba205441136d09cfd",
-    "slice_index": 0,
+    "export_fingerprint": "sha256:892f226469cd205c3df8b43c7fb6acae5d4249608892450c7d22ea3a10cf2cd7",
+    "slice_index": 1,
     "total_slices": 14,
-    "current_ids": 18925,
-    "base_current_requests": 37850,
+    "current_ids": 18933,
+    "base_current_requests": 37866,
     "max_reserved_requests": 55000,
     "results": {
-      "positive": 17427,
-      "zero": 1498,
+      "positive": 16684,
+      "zero": 2249,
       "failed": 0,
       "unavailable": 0
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "41321549345-1-company-movie",
-      "reservation_sha256": "892315dae9845bffc3ce52f0e13411a185d8da7de005383f29c2162114da2a17",
-      "utc_date": "2026-11-01",
+      "reservation_id": "41504809712-1-company-movie",
+      "reservation_sha256": "3173f79cd92f912963b3b68f0a321a2d19299a1bf29dd23df970e2ec9b0ffd32",
+      "utc_date": "2026-11-02",
       "planned_month": "2026-11",
       "workflow": "Monthly TMDB Company Refresh",
-      "run_id": "41321549345",
+      "run_id": "41504809712",
       "run_attempt": "1",
       "job": "collect-company-movie",
       "allocation_key": "collection",
       "request_class": "company-movie",
       "target_dimension": "company-movie",
       "allowance": 55000,
-      "attempts_used": 37850,
-      "unused_allowance": 17150,
-      "first_attempt_at": "2026-11-01T15:31:01.793Z",
-      "last_attempt_at": "2026-11-01T17:03:53.316Z",
+      "attempts_used": 37866,
+      "unused_allowance": 17134,
+      "first_attempt_at": "2026-11-02T18:54:20.813Z",
+      "last_attempt_at": "2026-11-02T20:21:29.070Z",
       "by_host": {
-        "api.themoviedb.org": 37850,
+        "api.themoviedb.org": 37866,
         "files.tmdb.org": 0
       },
       "by_status_or_outcome": {
-        "200": 37850
+        "200": 37866
       },
       "retries": 0
     },
-    "started_at": "2026-11-01T15:31:00.591Z",
-    "finished_at": "2026-11-01T17:03:54.203Z"
+    "started_at": "2026-11-02T18:54:19.721Z",
+    "finished_at": "2026-11-02T20:21:29.941Z"
   }
 }
