@@ -1,63 +1,63 @@
 {
   "last_scan": {
     "mode": "tmdb_export_sliced_enrichment",
-    "export_date": "11_01_2026",
-    "export_total_ids": 5713,
-    "offset": 0,
-    "limit": 2856,
-    "actual_limit": 2856,
+    "export_date": "11_02_2026",
+    "export_total_ids": 5716,
+    "offset": 2858,
+    "limit": 2858,
+    "actual_limit": 2858,
     "lowest_id": 1,
-    "highest_id": 9642,
-    "checked": 2856,
-    "found": 2856,
+    "highest_id": 9645,
+    "checked": 2858,
+    "found": 2858,
     "missing": 0,
-    "total_cached": 5713,
+    "total_cached": 5716,
     "month": "2026-11",
-    "export_fingerprint": "sha256:ce4f939df91f312a15f41af452231c5c92f5ee85f7aee05beed5a8bad8476b0b",
-    "slice_index": 0,
+    "export_fingerprint": "sha256:8c6910767c404640f8f08bfc1dd0ba9eef96b76a8fd3e0b8424f57cc9664d982",
+    "slice_index": 1,
     "total_slices": 2,
-    "current_ids": 2856,
-    "base_current_requests": 5712,
+    "current_ids": 2858,
+    "base_current_requests": 5716,
     "max_reserved_requests": 15000,
     "results": {
-      "positive": 2637,
-      "zero": 219,
+      "positive": 2287,
+      "zero": 571,
       "failed": 0,
       "unavailable": 0
     },
     "catalogue_counts": {
-      "positive": 4931,
-      "zero": 782,
+      "positive": 4926,
+      "zero": 790,
       "unknown": 0
     },
     "requests": {
       "schema_version": 2,
-      "reservation_id": "41321247889-1-network-series",
-      "reservation_sha256": "d556c82c1d877b0a9616ade46f4d31ebba49a7117d453dea8701deb3a6b5b144",
-      "utc_date": "2026-11-01",
+      "reservation_id": "41504099259-1-network-series",
+      "reservation_sha256": "96a609e9309f0de487345cca7800de0e74c72eb87ed651caa7a4095f990b5a95",
+      "utc_date": "2026-11-02",
       "planned_month": "2026-11",
       "workflow": "Monthly TMDB Network Refresh",
-      "run_id": "41321247889",
+      "run_id": "41504099259",
       "run_attempt": "1",
       "job": "collect-network-series",
       "allocation_key": "collection",
       "request_class": "network-series",
       "target_dimension": "network-series",
       "allowance": 15000,
-      "attempts_used": 5712,
-      "unused_allowance": 9288,
-      "first_attempt_at": "2026-11-01T15:27:19.550Z",
-      "last_attempt_at": "2026-11-01T15:35:23.664Z",
+      "attempts_used": 5716,
+      "unused_allowance": 9284,
+      "first_attempt_at": "2026-11-02T18:50:01.038Z",
+      "last_attempt_at": "2026-11-02T18:59:34.561Z",
       "by_host": {
-        "api.themoviedb.org": 5712,
+        "api.themoviedb.org": 5716,
         "files.tmdb.org": 0
       },
       "by_status_or_outcome": {
-        "200": 5712
+        "200": 5716
       },
       "retries": 0
     },
-    "started_at": "2026-11-01T15:27:19.219Z",
-    "finished_at": "2026-11-01T15:35:23.835Z"
+    "started_at": "2026-11-02T18:50:00.770Z",
+    "finished_at": "2026-11-02T18:59:34.724Z"
   }
 }
