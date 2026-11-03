@@ -3,29 +3,29 @@
   "parser_semantic_version": "1.0.0",
   "dataset": "networks",
   "label": "TV Networks",
-  "export_date": "11_02_2026",
+  "export_date": "11_03_2026",
   "export_total_ids": 5716,
   "export_month": "2026-11",
-  "export_fingerprint": "sha256:8c6910767c404640f8f08bfc1dd0ba9eef96b76a8fd3e0b8424f57cc9664d982",
+  "export_fingerprint": "sha256:d596fb59a72604eb44f32e560deec9c5a41d42dbabb24818df5f263b3bc6c5df",
   "export_schema_version": 1,
   "export_parser_semantic_version": "1.0.0",
-  "cached_total_ids": 5713,
-  "cached_unique_ids": 5713,
-  "matched_count": 5713,
-  "coverage_percent": 99.9475,
-  "missing_from_cache_count": 3,
-  "extra_in_cache_count": 0,
+  "cached_total_ids": 5716,
+  "cached_unique_ids": 5716,
+  "matched_count": 5715,
+  "coverage_percent": 99.9825,
+  "missing_from_cache_count": 1,
+  "extra_in_cache_count": 1,
   "duplicate_cached_ids_count": 0,
   "lowest_export_id": 1,
-  "highest_export_id": 9645,
+  "highest_export_id": 9646,
   "lowest_cached_id": 1,
-  "highest_cached_id": 9642,
+  "highest_cached_id": 9645,
   "missing_from_cache": [
-    9643,
-    9644,
-    9645
+    9646
   ],
-  "extra_in_cache": [],
+  "extra_in_cache": [
+    8195
+  ],
   "duplicate_cached_ids": [],
-  "audited_at": "2026-11-02T18:17:01.799Z"
+  "audited_at": "2026-11-03T16:11:40.222Z"
 }
