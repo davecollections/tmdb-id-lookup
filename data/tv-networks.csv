@@ -5719,8 +5719,11 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9648,GMMTV,0,,,,https://www.themoviedb.org/network/9648
 9649,HGTV,1,,,,https://www.themoviedb.org/network/9649
 9650,rai 1,0,,,,https://www.themoviedb.org/network/9650
-9651,FanQieYingShi (CN),0,北京市海淀区紫金数码园5号楼2层206,CN,https://fanqienovel.com/,https://www.themoviedb.org/network/9651
+9651,FanQieYingShi (CN),0,北京市海淀区紫金数码园5号楼2层206,CN,,https://www.themoviedb.org/network/9651
 9652,TRT Kurdî,1,,,,https://www.themoviedb.org/network/9652
 9653,pbs,0,,,,https://www.themoviedb.org/network/9653
 9654,pbn kids,1,,,,https://www.themoviedb.org/network/9654
 9655,pbn kids,0,,,,https://www.themoviedb.org/network/9655
+9656,KNN,1,,KR,https://www.knn.co.kr/mainnew,https://www.themoviedb.org/network/9656
+9657,LG HelloVision Corp.,1,,KR,https://lghellovision.net/,https://www.themoviedb.org/network/9657
+9658,Nickelodeon Asia,1,,CN,,https://www.themoviedb.org/network/9658
