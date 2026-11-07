@@ -5572,7 +5572,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9491,Canal 5 (UY),1,,,,https://www.themoviedb.org/network/9491
 9492,play.tv3.lt,1,,,,https://www.themoviedb.org/network/9492
 9493,ערוץ הכלכלה,1,"Ramat gan, israel",IL,,https://www.themoviedb.org/network/9493
-9494,roblox,0,Roblox Headquarters,US,,https://www.themoviedb.org/network/9494
 9495,Viaplay (UK),1,,,,https://www.themoviedb.org/network/9495
 9496,UNLP.TV,1,"La Plata, Buenos Aires, Argentina",AR,,https://www.themoviedb.org/network/9496
 9497,Voyo (BiH),2,,BA,,https://www.themoviedb.org/network/9497
@@ -5649,7 +5648,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9573,Viu,0,,,,https://www.themoviedb.org/network/9573
 9574,Sony VIZHA,8,,IN,,https://www.themoviedb.org/network/9574
 9575,Ahasa TV,1,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9575
-9577,PBS,1,,,,https://www.themoviedb.org/network/9577
 9578,CCTV,1,,,,https://www.themoviedb.org/network/9578
 9579,TV400,1,,SE,,https://www.themoviedb.org/network/9579
 9580,TV4 Plus,24,,SE,,https://www.themoviedb.org/network/9580
@@ -5721,9 +5719,19 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9650,rai 1,0,,,,https://www.themoviedb.org/network/9650
 9651,FanQieYingShi (CN),0,北京市海淀区紫金数码园5号楼2层206,CN,,https://www.themoviedb.org/network/9651
 9652,TRT Kurdî,1,,,,https://www.themoviedb.org/network/9652
-9653,pbs,0,,,,https://www.themoviedb.org/network/9653
 9654,pbn kids,1,,,,https://www.themoviedb.org/network/9654
 9655,pbn kids,0,,,,https://www.themoviedb.org/network/9655
-9656,KNN,1,,KR,https://www.knn.co.kr/mainnew,https://www.themoviedb.org/network/9656
-9657,LG HelloVision Corp.,1,,KR,https://lghellovision.net/,https://www.themoviedb.org/network/9657
+9656,KNN,1,,KR,,https://www.themoviedb.org/network/9656
+9657,LG HelloVision Corp.,1,,KR,,https://www.themoviedb.org/network/9657
 9658,Nickelodeon Asia,1,,CN,,https://www.themoviedb.org/network/9658
+9659,TRT Okul,1,,,,https://www.themoviedb.org/network/9659
+9660,TRT Okul,0,,,,https://www.themoviedb.org/network/9660
+9661,TRT Okul,0,,,,https://www.themoviedb.org/network/9661
+9662,La Séptima,4,Madrid,ES,https://laseptima.com/,https://www.themoviedb.org/network/9662
+9663,شركة الشام الدولية,0,,,,https://www.themoviedb.org/network/9663
+9664,Star!,0,,,,https://www.themoviedb.org/network/9664
+9665,الشام الدولية للإنتاج والتوزيع الفني,1,,,,https://www.themoviedb.org/network/9665
+9666,الشام الدولية للإنتاج والتوزيع الفني,1,,,,https://www.themoviedb.org/network/9666
+9667,سانيلاند فيلم إنترناشيونال,1,,,,https://www.themoviedb.org/network/9667
+9668,The Lewis Foy Show,1,,,,https://www.themoviedb.org/network/9668
+9669,中視,1,,,,https://www.themoviedb.org/network/9669
