@@ -2229,7 +2229,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 3927,Rai 5,6,"Rome, Italy",IT,,https://www.themoviedb.org/network/3927
 3928,Canal+,16,"Torre Picasso, Madrid",ES,,https://www.themoviedb.org/network/3928
 3929,Ten,5,Madrid,ES,,https://www.themoviedb.org/network/3929
-3931,NRK,39,,NO,,https://www.themoviedb.org/network/3931
 3933,vossevents.com,1,,US,,https://www.themoviedb.org/network/3933
 3936,DDR-F1,5,,DE,,https://www.themoviedb.org/network/3936
 3937,DDR-F2,0,,DE,,https://www.themoviedb.org/network/3937
@@ -4979,7 +4978,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8795,tv,0,,,,https://www.themoviedb.org/network/8795
 8796,WOW! SHOW,2,,PL,,https://www.themoviedb.org/network/8796
 8797,PLANETE+,1,,PL,,https://www.themoviedb.org/network/8797
-8800,British Broadcasting Corporation (BBC): United Kingdom,1,,,,https://www.themoviedb.org/network/8800
 8802,Discovery+ (SE),0,,,,https://www.themoviedb.org/network/8802
 8803,Ponta Pass,0,,JP,,https://www.themoviedb.org/network/8803
 8807,Vietnam Today,1,"43 Nguyễn Chí Thanh, Giảng Võ, Hà Nội, Việt Nam",VN,,https://www.themoviedb.org/network/8807
@@ -5695,7 +5693,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9636,BBC One,0,,,,https://www.themoviedb.org/network/9636
 9637,Patreon,0,,,,https://www.themoviedb.org/network/9637
 9638,Disney Channel(TW),1,臺灣台北市中正區襄陽路1號(舊址)[1] 台北市內湖區堤頂大道2段183號富邦東京企業總部大樓11樓（福斯傳媒集團台北內湖大樓）(現址),TW,,https://www.themoviedb.org/network/9638
-9639,iqiyi,0,,,,https://www.themoviedb.org/network/9639
 9640,Cctv8,0,,,,https://www.themoviedb.org/network/9640
 9641,TV11,1,,SE,,https://www.themoviedb.org/network/9641
 9642,Mun Tv,1,,,,https://www.themoviedb.org/network/9642
@@ -5732,10 +5729,19 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9674,K76 Wonder Entertainment,1,,,,https://www.themoviedb.org/network/9674
 9675,K76 Films,1,,,,https://www.themoviedb.org/network/9675
 9676,"ООО ""Телепроект""",1,,,,https://www.themoviedb.org/network/9676
-9677,Polsat Café,1,Warsaw,PL,https://www.polsatcafe.pl/,https://www.themoviedb.org/network/9677
-9678,ONE store,3,,KR,https://www.onestore.co.kr/,https://www.themoviedb.org/network/9678
+9677,Polsat Café,1,Warsaw,PL,,https://www.themoviedb.org/network/9677
+9678,ONE store,3,,KR,,https://www.themoviedb.org/network/9678
 9679,TA-DAA!,1,,,,https://www.themoviedb.org/network/9679
 9680,- América Televisión,0,,,,https://www.themoviedb.org/network/9680
 9681,- América Televisión (PE),0,,,,https://www.themoviedb.org/network/9681
 9682,América Televisión (PE),1,,,,https://www.themoviedb.org/network/9682
 9683,boomerang,0,,,,https://www.themoviedb.org/network/9683
+9684,LEGO.com,1,,,,https://www.themoviedb.org/network/9684
+9685,LEGO.com,1,,,,https://www.themoviedb.org/network/9685
+9686,TV2 Séf,1,,HU,,https://www.themoviedb.org/network/9686
+9687,Syndication,0,,,,https://www.themoviedb.org/network/9687
+9688,FilmRise,1,,,,https://www.themoviedb.org/network/9688
+9689,DigitalChickTV,0,,,,https://www.themoviedb.org/network/9689
+9690,Clicker,0,,,,https://www.themoviedb.org/network/9690
+9691,MinglemediaTV,0,,,,https://www.themoviedb.org/network/9691
+9692,Omni Broadcasting Network,1,,US,http://www.obn-tv.com,https://www.themoviedb.org/network/9692
