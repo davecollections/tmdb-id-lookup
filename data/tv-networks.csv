@@ -5460,7 +5460,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9374,Dupe,0,,,,https://www.themoviedb.org/network/9374
 9376,Plural TV,1,"Ciudad de México, MX",MX,,https://www.themoviedb.org/network/9376
 9377,Kanal S,1,,AZ,,https://www.themoviedb.org/network/9377
-9378,Deezer,1,,,,https://www.themoviedb.org/network/9378
 9379,Sunu Yeuf,2,,SN,,https://www.themoviedb.org/network/9379
 9380,PrimaFREE,1,Rovigo (VE),IT,,https://www.themoviedb.org/network/9380
 9381,Himalaya TV,1,,,,https://www.themoviedb.org/network/9381
@@ -5751,4 +5750,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9719,https://youtube.com/@ch_bandal?si=zPCLQX0q6tqggGD8,1,,,,https://www.themoviedb.org/network/9719
 9720,Asianet Plus,1,,IN,,https://www.themoviedb.org/network/9720
 9721,VTV5,1,,,,https://www.themoviedb.org/network/9721
-9722,Do Drama,14,,MY,https://dodrama.com/,https://www.themoviedb.org/network/9722
+9722,Do Drama,14,,MY,,https://www.themoviedb.org/network/9722
+9723,Missax,0,,,,https://www.themoviedb.org/network/9723
+9724,Sada El-Balad,1,,,,https://www.themoviedb.org/network/9724
+9725,Yumurcak TV,1,,,,https://www.themoviedb.org/network/9725
