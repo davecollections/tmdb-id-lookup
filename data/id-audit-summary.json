@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "parser_semantic_version": "1.0.0",
-  "audited_at": "2026-11-18T17:12:20.269Z",
+  "audited_at": "2026-11-18T21:38:29.993Z",
   "datasets": [
     {
       "dataset": "companies",
@@ -10,12 +10,12 @@
       "export_total_ids": 268790,
       "export_month": "2026-11",
       "export_fingerprint": "sha256:832c0a16b9dc42b81a8ed7e8a4a0c84974c40627537bd3d0ac0238f37ec0d887",
-      "cached_total_ids": 266452,
-      "cached_unique_ids": 266452,
-      "matched_count": 266278,
-      "coverage_percent": 99.0654,
-      "missing_from_cache_count": 2512,
-      "extra_in_cache_count": 174,
+      "cached_total_ids": 268790,
+      "cached_unique_ids": 268790,
+      "matched_count": 268790,
+      "coverage_percent": 100,
+      "missing_from_cache_count": 0,
+      "extra_in_cache_count": 0,
       "duplicate_cached_ids_count": 0
     },
     {
@@ -25,11 +25,11 @@
       "export_total_ids": 5758,
       "export_month": "2026-11",
       "export_fingerprint": "sha256:7561f5c64a8e9c01396f2bf062e7fc3a1ea6bb8ae34ec7abe077d4dc0a667f6a",
-      "cached_total_ids": 5755,
-      "cached_unique_ids": 5755,
-      "matched_count": 5755,
-      "coverage_percent": 99.9479,
-      "missing_from_cache_count": 3,
+      "cached_total_ids": 5758,
+      "cached_unique_ids": 5758,
+      "matched_count": 5758,
+      "coverage_percent": 100,
+      "missing_from_cache_count": 0,
       "extra_in_cache_count": 0,
       "duplicate_cached_ids_count": 0
     }

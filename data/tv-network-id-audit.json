@@ -9,23 +9,19 @@
   "export_fingerprint": "sha256:7561f5c64a8e9c01396f2bf062e7fc3a1ea6bb8ae34ec7abe077d4dc0a667f6a",
   "export_schema_version": 1,
   "export_parser_semantic_version": "1.0.0",
-  "cached_total_ids": 5755,
-  "cached_unique_ids": 5755,
-  "matched_count": 5755,
-  "coverage_percent": 99.9479,
-  "missing_from_cache_count": 3,
+  "cached_total_ids": 5758,
+  "cached_unique_ids": 5758,
+  "matched_count": 5758,
+  "coverage_percent": 100,
+  "missing_from_cache_count": 0,
   "extra_in_cache_count": 0,
   "duplicate_cached_ids_count": 0,
   "lowest_export_id": 1,
   "highest_export_id": 9728,
   "lowest_cached_id": 1,
-  "highest_cached_id": 9725,
-  "missing_from_cache": [
-    9726,
-    9727,
-    9728
-  ],
+  "highest_cached_id": 9728,
+  "missing_from_cache": [],
   "extra_in_cache": [],
   "duplicate_cached_ids": [],
-  "audited_at": "2026-11-18T17:12:20.268Z"
+  "audited_at": "2026-11-18T21:38:29.992Z"
 }
