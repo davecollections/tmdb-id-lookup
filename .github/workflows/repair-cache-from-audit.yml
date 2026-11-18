@@ -23,11 +23,11 @@ on:
         type: choice
         options: [plan, collect, validate]
       max_company_ids:
-        description: Maximum Company add/remove changes
+        description: Company batch size (0-5000; daily automation uses 200)
         required: true
         default: "200"
       max_network_ids:
-        description: Maximum Network IDs repaired per run
+        description: Network batch size including unknown counts (0-200)
         required: true
         default: "200"
 
@@ -62,14 +62,16 @@ jobs:
             echo "mode must be plan, collect, or validate" >&2
             exit 1
           fi
-          if ! [[ "$MAX_COMPANY_IDS" =~ ^[0-9]+$ ]] || (( MAX_COMPANY_IDS > 200 )); then
-            echo "max_company_ids must be 0 through 200" >&2
+          if ! [[ "$MAX_COMPANY_IDS" =~ ^[0-9]{1,4}$ ]] || (( 10#$MAX_COMPANY_IDS > 5000 )); then
+            echo "max_company_ids must be 0 through 5000" >&2
             exit 1
           fi
-          if ! [[ "$MAX_NETWORK_IDS" =~ ^[0-9]+$ ]] || (( MAX_NETWORK_IDS > 200 )); then
+          if ! [[ "$MAX_NETWORK_IDS" =~ ^[0-9]{1,3}$ ]] || (( 10#$MAX_NETWORK_IDS > 200 )); then
             echo "max_network_ids must be 0 through 200" >&2
             exit 1
           fi
+          MAX_COMPANY_IDS=$((10#$MAX_COMPANY_IDS))
+          MAX_NETWORK_IDS=$((10#$MAX_NETWORK_IDS))
           if [[ "$MODE" == "collect" ]]; then
             REQUIRES_REQUESTS=true
           else
@@ -215,7 +217,7 @@ jobs:
             maintenance/tmdb-request-budget/${{ needs.reserve-repair-requests.outputs.utc_date }}/usage
 
   validate-repair:
-    if: needs.plan-repair.outputs.mode == 'validate'
+    if: needs.plan-repair.outputs.mode != 'collect'
     needs: plan-repair
     runs-on: ubuntu-latest
     permissions:
@@ -228,13 +230,13 @@ jobs:
           package-manager-cache: false
       - name: Validate Company repair without requests
         env:
-          MODE: validate
+          MODE: ${{ needs.plan-repair.outputs.mode }}
           COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
           MAX_REPAIR_IDS: ${{ needs.plan-repair.outputs.max_company_ids }}
         run: node scripts/repair-company-cache-from-audit.mjs
       - name: Validate Network repair without requests
         env:
-          MODE: validate
+          MODE: ${{ needs.plan-repair.outputs.mode }}
           COUNT_MONTH: ${{ needs.plan-repair.outputs.planned_month }}
           MAX_REPAIR_IDS: ${{ needs.plan-repair.outputs.max_network_ids }}
         run: node scripts/repair-tv-network-cache-from-audit.mjs

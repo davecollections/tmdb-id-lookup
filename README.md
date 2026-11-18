@@ -155,7 +155,7 @@ Each Nuvio export modal includes a help button with current import steps for Nuv
 
 Cached company, TV network, and genre data is maintained automatically from TMDB data and API responses.
 
-The project runs daily checks for TMDB export changes, repairs small cache differences automatically, and refreshes genre title counts weekly. Production company and TV network caches also run scheduled full-refresh passes at the start of each month so the local lookup data stays aligned with TMDB's exported ID lists.
+The project runs daily checks for TMDB export changes, repairs cache differences in bounded batches of up to 200 changes per dataset, and refreshes genre title counts weekly. Larger backlogs carry forward to later runs. Production company and TV network caches also run scheduled full-refresh passes at the start of each month so the local lookup data stays aligned with TMDB's exported ID lists. See [cache maintenance and recovery](docs/CACHE_MAINTENANCE.md) for batch progress, request-budget safeguards and manual recovery.
 
 The site is deployed with GitHub Pages.
 

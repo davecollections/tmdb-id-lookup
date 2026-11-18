@@ -1,8 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import {
+	assertRepairBatchCompleted,
 	buildRepairMetadata,
+	formatRepairSummary,
 	hasRepairPartialFailure,
+	parseRepairBatchLimit,
+	planRepairBatch,
 	repairMissingLegacyRows,
 	validateRepairAudit,
 } from "./lib/entity-cache-repair.mjs";
@@ -14,7 +18,7 @@ import { createTmdbRequestClient } from "./lib/tmdb-maintenance-request.mjs";
 
 const TOKEN = process.env.TMDB_BEARER_TOKEN;
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
-const MAX_REPAIR_IDS = process.env.MAX_REPAIR_IDS ? Number(process.env.MAX_REPAIR_IDS) : null;
+const MAX_REPAIR_IDS = parseRepairBatchLimit(process.env.MAX_REPAIR_IDS);
 const MODE = process.env.MODE || "collect";
 const MONTH = process.env.COUNT_MONTH || utcMonth();
 const OBSERVED_AT = new Date().toISOString();
@@ -36,6 +40,9 @@ async function readJsonFile(filePath, fallback) {
 
 async function writeRepairMetadata(report) {
 	await fs.writeFile(REPAIR_META_PATH, `${JSON.stringify({ last_repair: report }, null, 2)}\n`);
+	const summary = formatRepairSummary(report);
+	console.log(summary);
+	if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
 }
 
 function expandCompactCompany(company) {
@@ -104,13 +111,8 @@ if (!["collect", "plan", "validate"].includes(MODE)) {
 }
 const audit = await readJsonFile(AUDIT_PATH);
 if (!audit) throw new Error(`Missing audit file: ${AUDIT_PATH}. Run the audit first.`);
-const missingIds = Array.isArray(audit.missing_from_cache)
-	? audit.missing_from_cache.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
-	: [];
-const extraIds = Array.isArray(audit.extra_in_cache)
-	? audit.extra_in_cache.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
-	: [];
-const requestedRepairCount = missingIds.length + extraIds.length;
+const missingIds = audit.missing_from_cache;
+const extraIds = audit.extra_in_cache;
 let auditFreshness;
 try {
 	auditFreshness = validateRepairAudit({
@@ -141,10 +143,19 @@ try {
 	throw error;
 }
 
+const existingCompact = await readJsonFile(MIN_JSON_PATH, []);
+const previousRepair = (await readJsonFile(REPAIR_META_PATH, null))?.last_repair;
+const batch = planRepairBatch({
+	missingIds,
+	extraIds,
+	cachedIds: existingCompact.map((company) => company.i),
+	maxRepairIds: MAX_REPAIR_IDS,
+	afterId: previousRepair?.batch?.last_selected_id,
+});
 const requestPlan = {
-	details_requests: missingIds.length,
-	discover_requests: missingIds.length,
-	base_requests: missingIds.length * 2,
+	details_requests: batch.selected_missing.length,
+	discover_requests: batch.selected_missing.length,
+	base_requests: batch.selected_missing.length * 2,
 };
 console.log(
 	JSON.stringify(
@@ -155,6 +166,7 @@ console.log(
 				audit_freshness: auditFreshness,
 				missing_ids: missingIds.length,
 				extra_ids: extraIds.length,
+				batch,
 				...requestPlan,
 			},
 		},
@@ -164,8 +176,7 @@ console.log(
 );
 if (["plan", "validate"].includes(MODE)) process.exit(0);
 
-const existingCompact = await readJsonFile(MIN_JSON_PATH, []);
-if (requestedRepairCount === 0) {
+if (batch.selected_count === 0) {
 	await writeRepairMetadata(
 		buildRepairMetadata({
 			entityType: "company",
@@ -179,32 +190,11 @@ if (requestedRepairCount === 0) {
 			startedAt: OBSERVED_AT,
 			finishedAt: new Date().toISOString(),
 			status: "skipped",
-			reason: "nothing_to_repair",
+			reason: batch.pending_count > 0 ? "batch_disabled" : "nothing_to_repair",
+			batch,
 			totalCached: existingCompact.length,
 		}),
 	);
-	console.log("Nothing to repair. Skipping Company cache update.");
-	process.exit(0);
-}
-if (MAX_REPAIR_IDS !== null && requestedRepairCount > MAX_REPAIR_IDS) {
-	await writeRepairMetadata(
-		buildRepairMetadata({
-			entityType: "company",
-			mode: MODE,
-			month: MONTH,
-			audit,
-			auditFreshness,
-			maxRepairIds: MAX_REPAIR_IDS,
-			missingIds,
-			extraIds,
-			startedAt: OBSERVED_AT,
-			finishedAt: new Date().toISOString(),
-			status: "skipped",
-			reason: "max_repair_ids_exceeded",
-			totalCached: existingCompact.length,
-		}),
-	);
-	console.log(`Repair skipped: ${requestedRepairCount} exceeds MAX_REPAIR_IDS=${MAX_REPAIR_IDS}.`);
 	process.exit(0);
 }
 if (!TOKEN) throw new Error("Missing TMDB_BEARER_TOKEN");
@@ -233,11 +223,11 @@ const companyMap = new Map(
 		.map((company) => [Number(company.i), expandCompactCompany(company)]),
 );
 const removed = [];
-for (const id of extraIds) {
+for (const id of batch.selected_extra) {
 	if (companyMap.delete(id)) removed.push(id);
 }
 const repair = await repairMissingLegacyRows({
-	ids: missingIds,
+	ids: batch.selected_missing,
 	dimension: CATALOGUE_DIMENSIONS.COMPANY_MOVIE,
 	client,
 	observedAt: OBSERVED_AT,
@@ -255,12 +245,13 @@ await client.writeUsage({
 	dimension: CATALOGUE_DIMENSIONS.COMPANY_MOVIE,
 	target_fingerprint: auditFreshness.export_fingerprint,
 });
+assertRepairBatchCompleted(repair, batch.selected_missing.length);
 const companies = [...companyMap.values()].sort((left, right) => left.id - right.id);
 await fs.writeFile(MIN_JSON_PATH, JSON.stringify(companies.map(compactCompany)));
 await fs.writeFile(CSV_PATH, toCsv(companies));
 const partialFailure = hasRepairPartialFailure({
 	repair,
-	requestedMissingCount: missingIds.length,
+	requestedMissingCount: batch.selected_missing.length,
 });
 await writeRepairMetadata(
 	buildRepairMetadata({
@@ -280,6 +271,7 @@ await writeRepairMetadata(
 		removed,
 		usage,
 		requestPlan,
+		batch,
 		totalCached: companies.length,
 	}),
 );

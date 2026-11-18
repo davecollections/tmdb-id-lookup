@@ -6,8 +6,12 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
+	assertRepairBatchCompleted,
 	buildRepairMetadata,
+	formatRepairSummary,
 	hasRepairPartialFailure,
+	parseRepairBatchLimit,
+	planRepairBatch,
 	repairMissingLegacyRows,
 	validateRepairAudit,
 } from "../scripts/lib/entity-cache-repair.mjs";
@@ -41,6 +45,148 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixedNow = new Date("2026-08-06T09:00:00.000Z");
+
+test("repair batch drains a large mixed backlog across repeated same-audit runs", () => {
+	const missingIds = Array.from({ length: 425 }, (_, index) => index + 101);
+	const extraIds = [1, 2, 3];
+	let cachedIds = [1, 2, 3, 100];
+	let afterId;
+	const selectedCounts = [];
+	for (let run = 0; run < 3; run += 1) {
+		const batch = planRepairBatch({ missingIds, extraIds, cachedIds, afterId });
+		selectedCounts.push(batch.selected_count);
+		assert.ok(batch.selected_count <= 200);
+		assert.equal(batch.pending_count, batch.selected_count + batch.deferred_count);
+		assert.ok(batch.selected_missing.every((id) => !cachedIds.includes(id)));
+		cachedIds = cachedIds.filter((id) => !batch.selected_extra.includes(id)).concat(batch.selected_missing);
+		afterId = batch.last_selected_id;
+	}
+	assert.deepEqual(selectedCounts, [200, 200, 28]);
+	assert.deepEqual([...cachedIds].sort((a, b) => a - b), [100, ...missingIds]);
+	const complete = planRepairBatch({ missingIds, extraIds, cachedIds, afterId });
+	assert.equal(complete.selected_count, 0);
+	assert.equal(complete.already_resolved_count, 428);
+});
+
+test("repair batch rotates unresolved IDs and accepts new daily audit candidates", () => {
+	const ids = Array.from({ length: 450 }, (_, index) => index + 1);
+	const first = planRepairBatch({ missingIds: ids, extraIds: [], cachedIds: [] });
+	// All of the first 200 remain unresolved; the next batch must still advance.
+	const second = planRepairBatch({ missingIds: ids, extraIds: [], cachedIds: [], afterId: first.last_selected_id });
+	assert.deepEqual(second.selected_missing, ids.slice(200, 400));
+	const third = planRepairBatch({ missingIds: [...ids, 451], extraIds: [], cachedIds: [], afterId: second.last_selected_id });
+	assert.deepEqual(third.selected_missing.slice(0, 51), [...ids.slice(400), 451]);
+	assert.deepEqual(third.selected_missing.slice(51), ids.slice(0, 149));
+	assert.equal(new Set([...first.selected_missing, ...second.selected_missing, ...third.selected_missing]).size, 451);
+});
+
+test("repair batch handles zero, exact boundaries, stale candidates and manual recovery bounds", () => {
+	const candidates = { missingIds: [8, 3, 6], extraIds: [1, 2], cachedIds: [1, 6] };
+	const batch = planRepairBatch({ ...candidates, maxRepairIds: 2 });
+	assert.deepEqual(batch.selected_extra, [1]);
+	assert.deepEqual(batch.selected_missing, [3]);
+	assert.equal(batch.already_resolved_count, 2);
+	assert.equal(batch.deferred_count, 1);
+	const disabled = planRepairBatch({ ...candidates, maxRepairIds: 0, afterId: 3 });
+	assert.equal(disabled.selected_count, 0);
+	assert.equal(disabled.deferred_count, 3);
+	assert.equal(disabled.last_selected_id, 3);
+	assert.equal(planRepairBatch({ ...candidates, maxRepairIds: 3 }).deferred_count, 0);
+	assert.equal(parseRepairBatchLimit(), 200);
+	assert.equal(parseRepairBatchLimit("3000"), 3000);
+	assert.equal(parseRepairBatchLimit("5000"), 5000);
+	assert.equal(parseRepairBatchLimit("0"), 0);
+	assert.throws(() => parseRepairBatchLimit("201", 200), /0 through 200/);
+	for (const value of [-1, 0.5, NaN, Infinity, null, "", "1e3", "5001", "99999999999999999999999"]) {
+		assert.throws(() => parseRepairBatchLimit(value), /Repair batch limit/);
+	}
+});
+
+test("repair batch fails closed on malformed, duplicate or contradictory ID inputs", () => {
+	const valid = { missingIds: [1], extraIds: [2], cachedIds: [2] };
+	for (const field of ["missingIds", "extraIds", "cachedIds"]) {
+		for (const invalid of [undefined, null, "1", [1, 1], [0], [-1], [1.5], ["1"]]) {
+			assert.throws(() => planRepairBatch({ ...valid, [field]: invalid }), /unique positive integer IDs/);
+		}
+	}
+	assert.throws(() => planRepairBatch({ ...valid, extraIds: [1] }), /both missing and extra/);
+});
+
+test("repair batch metadata reports selected, deferred, unresolved and completed work honestly", () => {
+	const missingIds = [2, 3, 4];
+	const extraIds = [1];
+	const batch = planRepairBatch({ missingIds, extraIds, cachedIds: [1], maxRepairIds: 3 });
+	const base = {
+		entityType: "company", mode: "collect", month: "2026-08", audit: {},
+		missingIds, extraIds, maxRepairIds: 3, batch, status: "completed", removed: [1],
+		outcomes: [
+			{ id: 2, cache_restored: true, result: { status: "positive" } },
+			{ id: 3, cache_restored: false, details_status: 404, result: { status: "failed" } },
+		],
+	};
+	const report = buildRepairMetadata(base);
+	assert.equal(report.status, "backlog_remaining");
+	assert.equal(report.skipped, false);
+	assert.equal(report.batch.selected_count, 3);
+	assert.equal(report.batch.deferred_count, 1);
+	assert.equal(report.batch.remaining_count, 2);
+	assert.equal(report.not_found_count, 1);
+	assert.equal(report.failed_count, 0);
+	assert.match(formatRepairSummary(report), /Remaining audit changes after this batch: 2/);
+	assert.match(formatRepairSummary(report), /Result: backlog_remaining/);
+	assert.equal(buildRepairMetadata({ ...base, status: "partial_failure" }).status, "partial_failure");
+	const finishedBatch = planRepairBatch({ missingIds, extraIds, cachedIds: [2, 3, 4], maxRepairIds: 3 });
+	const finished = buildRepairMetadata({ ...base, batch: finishedBatch, outcomes: [], removed: [] });
+	assert.equal(finished.status, "completed");
+	assert.equal(finished.batch.remaining_count, 0);
+});
+
+test("repair batch refuses incomplete allocation work before catalogue publication", () => {
+	assert.throws(() => assertRepairBatchCompleted({ allocationStopped: true, outcomes: [] }, 1), /catalogue files were not written/);
+	assert.throws(() => assertRepairBatchCompleted({ allocationStopped: false, outcomes: [] }, 1), /catalogue files were not written/);
+	assert.doesNotThrow(() => assertRepairBatchCompleted({ allocationStopped: false, outcomes: [{}] }, 1));
+	assert.doesNotThrow(() => assertRepairBatchCompleted({ allocationStopped: false, outcomes: [] }, 0));
+});
+
+test("repair workflow bounds manual inputs and reserves ten attempts per configured ID", async (context) => {
+	const source = await fs.readFile(path.join(root, ".github/workflows/repair-cache-from-audit.yml"), "utf8");
+	const block = source.match(/        run: \|\r?\n((?:          [^\n]*\r?\n|\r?\n)+)/)?.[1];
+	assert.ok(block, "Repair planning shell must be present");
+	const script = block.split(/\r?\n/).map((line) => line.slice(10)).join("\n");
+	const bash = process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "bash";
+	const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "tmdb-repair-plan-"));
+	const outputPath = path.join(temporary, "outputs.txt");
+	context.after(async () => {
+		await fs.rm(outputPath, { force: true });
+		await fs.rmdir(temporary);
+	});
+	const run = async (mode, company, network) => {
+		await fs.writeFile(outputPath, "");
+		execFileSync(bash, ["--noprofile", "--norc", "-e", "-o", "pipefail", "-s"], {
+			input: script, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+			env: { ...process.env, MODE: mode, MAX_COMPANY_IDS: company, MAX_NETWORK_IDS: network,
+				GITHUB_OUTPUT: outputPath.replaceAll("\\", "/") },
+		});
+		return Object.fromEntries((await fs.readFile(outputPath, "utf8")).trim().split("\n").map((line) => {
+			const separator = line.indexOf("=");
+			return [line.slice(0, separator), line.slice(separator + 1)];
+		}));
+	};
+	const recovery = await run("collect", "3000", "0");
+	assert.deepEqual(JSON.parse(recovery.allocations), { company_repair: 30000, network_repair: 0 });
+	assert.equal(JSON.parse(recovery.request_bindings).company_repair.approved_allowance, 30000);
+	assert.equal(recovery.requires_requests, "true");
+	assert.equal((await run("plan", "3000", "0")).requires_requests, "false");
+	assert.equal((await run("validate", "5000", "200")).requires_requests, "false");
+	assert.equal((await run("collect", "0200", "008")).network_allowance, "80");
+	for (const [mode, company, network] of [
+		["collect", "5001", "0"], ["collect", "200", "201"], ["collect", "-1", "0"],
+		["collect", "99999999999999999999", "0"], ["collect", "1e3", "0"], ["unknown", "200", "0"],
+	]) await assert.rejects(run(mode, company, network));
+	const daily = await fs.readFile(path.join(root, ".github/workflows/daily-repair-cache-from-audit.yml"), "utf8");
+	assert.match(daily, /max_company_ids: "200"/);
+	assert.match(daily, /max_network_ids: "200"/);
+});
 
 function buildTestReceipt(options = {}) {
 	const allocations = options.allocations || { collection: 1 };
@@ -678,6 +824,16 @@ test("audit freshness and caps remain bound to the current export without frozen
 		maxAgeHours: 36,
 	});
 	assert.equal(freshness.export_fingerprint, audit.export_fingerprint);
+	for (const invalid of [
+		{ ...audit, audited_at: "2026-08-04T12:00:00Z" },
+		{ ...audit, dataset: "networks" },
+		{ ...audit, export_month: "2026-07" },
+		{ ...audit, export_fingerprint: "invalid" },
+		{ ...audit, schema_version: 99 },
+		{ ...audit, parser_semantic_version: "unknown" },
+	]) {
+		assert.throws(() => validateRepairAudit({ audit: invalid, expectedDataset: "companies", expectedMonth: "2026-08", now: fixedNow }));
+	}
 	assert.doesNotThrow(() =>
 		validateRepairAudit({
 			audit: { ...audit, audited_at: "2026-08-06T09:05:00Z" },
@@ -722,10 +878,12 @@ test("audit freshness and caps remain bound to the current export without frozen
 		extraIds: [3],
 		startedAt: fixedNow.toISOString(),
 		finishedAt: fixedNow.toISOString(),
-		status: "skipped",
-		reason: "max_repair_ids_exceeded",
+		status: "completed",
+		batch: planRepairBatch({ missingIds: [1, 2], extraIds: [3], cachedIds: [3], maxRepairIds: 2 }),
 	});
 	assert.deepEqual(report.cap, { maximum: 2, requested: 3, exceeded: true });
+	assert.equal(report.status, "backlog_remaining");
+	assert.equal(report.skipped, false);
 	assert.equal("typed_counts_active" in report, false);
 });
 

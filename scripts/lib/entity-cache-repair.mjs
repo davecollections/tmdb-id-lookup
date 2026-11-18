@@ -8,6 +8,83 @@ import {
 	validateAuditFreshness,
 } from "./tmdb-catalogue-counts.mjs";
 
+export function parseRepairBatchLimit(value = "200", maximum = 5000) {
+	if (!/^\d+$/.test(String(value))) {
+		throw new TypeError(`Repair batch limit must be an integer from 0 through ${maximum}.`);
+	}
+	const limit = Number(value);
+	if (!Number.isSafeInteger(limit) || limit > maximum) {
+		throw new RangeError(`Repair batch limit must be 0 through ${maximum}.`);
+	}
+	return limit;
+}
+
+function validateIds(ids, label) {
+	if (!Array.isArray(ids) || ids.some((id) => !Number.isSafeInteger(id) || id <= 0) ||
+		new Set(ids).size !== ids.length) {
+		throw new TypeError(`${label} must contain unique positive integer IDs.`);
+	}
+	return ids;
+}
+
+// Reconcile a fresh audit with the checkout, then walk pending IDs cyclically.
+// The cursor lives in the existing repair metadata and survives daily audits;
+// failed/404 IDs are revisited without blocking every ID behind them.
+export function planRepairBatch({ missingIds, extraIds, cachedIds, maxRepairIds = 200, afterId = 0 }) {
+	const limit = parseRepairBatchLimit(maxRepairIds);
+	validateIds(missingIds, "Missing IDs");
+	validateIds(extraIds, "Extra IDs");
+	const cached = new Set(validateIds(cachedIds, "Cached IDs"));
+	const extras = new Set(extraIds);
+	if (missingIds.some((id) => extras.has(id))) {
+		throw new TypeError("Repair audit cannot mark an ID both missing and extra.");
+	}
+	const pendingMissing = missingIds.filter((id) => !cached.has(id));
+	const pendingExtra = extraIds.filter((id) => cached.has(id));
+	const pending = [...pendingMissing, ...pendingExtra].sort((a, b) => a - b);
+	const cursor = Number.isSafeInteger(afterId) && afterId > 0 ? afterId : 0;
+	const ordered = [...pending.filter((id) => id > cursor), ...pending.filter((id) => id <= cursor)];
+	const selected = ordered.slice(0, limit);
+	return {
+		maximum: limit,
+		pending_missing: pendingMissing,
+		pending_extra: pendingExtra,
+		pending_count: pending.length,
+		already_resolved_count: missingIds.length + extraIds.length - pending.length,
+		selected_missing: selected.filter((id) => !extras.has(id)),
+		selected_extra: selected.filter((id) => extras.has(id)),
+		selected_count: selected.length,
+		deferred_count: pending.length - selected.length,
+		last_selected_id: selected.at(-1) ?? cursor,
+	};
+}
+
+export function assertRepairBatchCompleted(repair, requestedMissingCount) {
+	if (repair.allocationStopped || repair.outcomes.length !== requestedMissingCount) {
+		throw new Error("Repair exhausted its request allocation before completing the selected batch; catalogue files were not written.");
+	}
+}
+
+export function formatRepairSummary(report) {
+	const batch = report.batch;
+	return [
+		`### ${report.operation === "company_cache_repair" ? "Company" : "Network"} cache repair`,
+		"",
+		`- Result: ${report.status}${report.reason ? ` (${report.reason})` : ""}`,
+		`- Audit changes: ${report.requested_repair_count}`,
+		...(batch ? [
+			`- Pending before this batch: ${batch.pending_count}; selected: ${batch.selected_count}; deferred: ${batch.deferred_count}`,
+			`- Remaining audit changes after this batch: ${batch.remaining_count}`,
+		] : []),
+		`- Added: ${report.added_count}; removed: ${report.removed_count}; not found: ${report.not_found_count}; failed: ${report.failed_count}`,
+		`- TMDB attempts: ${report.requests?.attempts_used ?? 0} / ${report.requests?.allowance ?? 0}`,
+		...(report.network_count_retry ? [
+			`- Unknown Network counts: ${report.network_count_retry.selected} selected; ${report.network_count_retry.deferred} deferred`,
+		] : []),
+		"", "",
+	].join("\n");
+}
+
 function failedResult({ id, dimension, observedAt, error, attempts = [], code }) {
 	return {
 		id,
@@ -205,6 +282,7 @@ export function buildRepairMetadata({
 	usage = null,
 	requestPlan = null,
 	totalCached = null,
+	batch = null,
 }) {
 	const added = outcomes.filter((outcome) => outcome.cache_restored).map((outcome) => outcome.id);
 	const notFound = outcomes
@@ -218,10 +296,15 @@ export function buildRepairMetadata({
 		)
 		.map((outcome) => ({ id: outcome.id, error: outcome.result.error }));
 	const requestedRepairCount = missingIds.length + extraIds.length;
+	const addedSet = new Set(added);
+	const removedSet = new Set(removed);
+	const remainingMissingCount = batch?.pending_missing.filter((id) => !addedSet.has(id)).length;
+	const remainingExtraCount = batch?.pending_extra.filter((id) => !removedSet.has(id)).length;
+	const remainingCount = (remainingMissingCount ?? 0) + (remainingExtraCount ?? 0);
 	return {
 		operation: `${entityType}_cache_repair`,
 		mode,
-		status,
+		status: status === "completed" && remainingCount > 0 ? "backlog_remaining" : status,
 		reason,
 		source_audit_date: audit?.audited_at || "",
 		audit_freshness: auditFreshness,
@@ -255,6 +338,21 @@ export function buildRepairMetadata({
 		request_plan: requestPlan,
 		requests: usage,
 		total_cached: totalCached,
+		...(batch ? {
+			batch: {
+				maximum: batch.maximum,
+				pending_count: batch.pending_count,
+				already_resolved_count: batch.already_resolved_count,
+				selected_missing: batch.selected_missing,
+				selected_extra: batch.selected_extra,
+				selected_count: batch.selected_count,
+				deferred_count: batch.deferred_count,
+				last_selected_id: batch.last_selected_id,
+				remaining_missing_count: remainingMissingCount,
+				remaining_extra_count: remainingExtraCount,
+				remaining_count: remainingCount,
+			},
+		} : {}),
 		skipped: status === "skipped",
 		started_at: startedAt,
 		finished_at: finishedAt,
