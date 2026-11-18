@@ -93,6 +93,41 @@ test("request-budget reservations retain protected commitments and hard ceilings
 	);
 });
 
+test("Company recovery reserves its full bounded allowance alongside daily maintenance", () => {
+	const daily = buildTestReceipt({
+		reservationId: "daily", bucket: RESERVATION_BUCKETS.REPAIR,
+		allocations: { company_repair: 2000, network_repair: 2000 },
+	}).receipt;
+	const monthly = buildTestReceipt({
+		reservationId: "monthly", allocations: { collection: 55_000, target_export: 7 },
+		existingReceipts: [daily],
+	}).receipt;
+	const recovery = buildTestReceipt({
+		reservationId: "recovery", bucket: RESERVATION_BUCKETS.REPAIR,
+		allocations: { company_repair: 30_000, network_repair: 0 },
+		existingReceipts: [daily, monthly],
+	}).receipt;
+	assert.equal(recovery.projected_daily_total, 89_057);
+	assert.equal(recovery.preferred_override_used, false);
+	assert.equal(recovery.bindings.company_repair.approved_allowance, 30_000);
+	assert.throws(() => buildTestReceipt({
+		bucket: RESERVATION_BUCKETS.REPAIR,
+		allocations: { company_repair: 31_000, network_repair: 0 },
+		existingReceipts: [daily, monthly],
+	}), /preferred 90000/);
+	assert.throws(() => buildTestReceipt({
+		bucket: RESERVATION_BUCKETS.REPAIR,
+		allocations: { company_repair: 50_000, network_repair: 0 },
+		existingReceipts: [daily, monthly],
+	}), /absolute 100000/);
+	// Even unused reservations are still charged; a second recovery cannot reuse them.
+	assert.throws(() => buildTestReceipt({
+		bucket: RESERVATION_BUCKETS.REPAIR,
+		allocations: { company_repair: 2000, network_repair: 0 },
+		existingReceipts: [daily, monthly, recovery],
+	}), /preferred 90000/);
+});
+
 test("all historical reservation receipts remain valid without modification", async () => {
 	let validated = 0;
 	for (const date of await fs.readdir(budgetRoot)) {

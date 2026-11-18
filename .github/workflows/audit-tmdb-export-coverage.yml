@@ -181,7 +181,7 @@ jobs:
             }
 
             lines.push('');
-            lines.push('The daily capped repair workflow will attempt to repair datasets with 200 or fewer requested add/remove changes. Larger repair sets should be reviewed and repaired manually.');
+            lines.push('The daily repair processes up to 200 pending changes per dataset, carrying the remainder forward. Check the repair summary for selected, deferred and remaining changes; this audit reports coverage before repair. Larger Company recovery batches can be run manually within the existing TMDB request budget.');
 
             await github.rest.issues.createComment({
               owner, repo, issue_number: issue.number, body: lines.join('\n'),

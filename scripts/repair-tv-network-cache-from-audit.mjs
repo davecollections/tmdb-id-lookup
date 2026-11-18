@@ -2,7 +2,10 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
 	buildRepairMetadata,
+	formatRepairSummary,
 	hasRepairPartialFailure,
+	parseRepairBatchLimit,
+	planRepairBatch,
 	repairMissingLegacyRows,
 	validateRepairAudit,
 } from "./lib/entity-cache-repair.mjs";
@@ -18,7 +21,7 @@ import { createTmdbRequestClient } from "./lib/tmdb-maintenance-request.mjs";
 
 const TOKEN = process.env.TMDB_BEARER_TOKEN;
 const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS || 120);
-const MAX_REPAIR_IDS = process.env.MAX_REPAIR_IDS ? Number(process.env.MAX_REPAIR_IDS) : null;
+const MAX_REPAIR_IDS = parseRepairBatchLimit(process.env.MAX_REPAIR_IDS, 200);
 const MODE = process.env.MODE || "collect";
 const MONTH = process.env.COUNT_MONTH || utcMonth();
 const OBSERVED_AT = new Date().toISOString();
@@ -40,6 +43,9 @@ async function readJsonFile(filePath, fallback) {
 
 async function writeRepairMetadata(report) {
 	await fs.writeFile(REPAIR_META_PATH, `${JSON.stringify({ last_repair: report }, null, 2)}\n`);
+	const summary = formatRepairSummary(report);
+	console.log(summary);
+	if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
 }
 
 function expandCompactNetwork(network) {
@@ -171,13 +177,8 @@ if (!["collect", "plan", "validate"].includes(MODE)) {
 }
 const audit = await readJsonFile(AUDIT_PATH);
 if (!audit) throw new Error(`Missing audit file: ${AUDIT_PATH}. Run the audit first.`);
-const missingIds = Array.isArray(audit.missing_from_cache)
-	? audit.missing_from_cache.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
-	: [];
-const extraIds = Array.isArray(audit.extra_in_cache)
-	? audit.extra_in_cache.map(Number).filter((id) => Number.isSafeInteger(id) && id > 0)
-	: [];
-const requestedRepairCount = missingIds.length + extraIds.length;
+const missingIds = audit.missing_from_cache;
+const extraIds = audit.extra_in_cache;
 let auditFreshness;
 try {
 	auditFreshness = validateRepairAudit({
@@ -209,22 +210,27 @@ try {
 }
 
 const existingCompact = await readJsonFile(MIN_JSON_PATH, []);
+const previousRepair = (await readJsonFile(REPAIR_META_PATH, null))?.last_repair;
+const batch = planRepairBatch({
+	missingIds,
+	extraIds,
+	cachedIds: existingCompact.map((network) => network.i),
+	maxRepairIds: MAX_REPAIR_IDS,
+	afterId: previousRepair?.batch?.last_selected_id,
+});
 const extraIdSet = new Set(extraIds);
 const unknownCountIds = existingCompact
 	.filter((network) => network?.i && !Object.hasOwn(network, "t"))
 	.map((network) => Number(network.i))
 	.filter((id) => Number.isSafeInteger(id) && id > 0 && !extraIdSet.has(id))
 	.sort((left, right) => left - right);
-const unknownRetryCapacity =
-	MAX_REPAIR_IDS === null
-		? unknownCountIds.length
-		: Math.max(0, MAX_REPAIR_IDS - requestedRepairCount);
+const unknownRetryCapacity = MAX_REPAIR_IDS - batch.selected_count;
 const selectedUnknownCountIds = unknownCountIds.slice(0, unknownRetryCapacity);
 const deferredUnknownCountIds = unknownCountIds.slice(selectedUnknownCountIds.length);
 const requestPlan = {
-	details_requests: missingIds.length,
-	discover_requests: missingIds.length + selectedUnknownCountIds.length,
-	base_requests: missingIds.length * 2 + selectedUnknownCountIds.length,
+	details_requests: batch.selected_missing.length,
+	discover_requests: batch.selected_missing.length + selectedUnknownCountIds.length,
+	base_requests: batch.selected_missing.length * 2 + selectedUnknownCountIds.length,
 };
 console.log(
 	JSON.stringify(
@@ -235,6 +241,7 @@ console.log(
 				audit_freshness: auditFreshness,
 				missing_ids: missingIds.length,
 				extra_ids: extraIds.length,
+				batch,
 				unknown_count_ids: unknownCountIds.length,
 				selected_unknown_count_ids: selectedUnknownCountIds.length,
 				deferred_unknown_count_ids: deferredUnknownCountIds.length,
@@ -247,7 +254,7 @@ console.log(
 );
 if (["plan", "validate"].includes(MODE)) process.exit(0);
 
-if (requestedRepairCount === 0 && selectedUnknownCountIds.length === 0) {
+if (batch.selected_count === 0 && selectedUnknownCountIds.length === 0) {
 	await writeRepairMetadata(
 		{
 			...buildRepairMetadata({
@@ -262,7 +269,8 @@ if (requestedRepairCount === 0 && selectedUnknownCountIds.length === 0) {
 				startedAt: OBSERVED_AT,
 				finishedAt: new Date().toISOString(),
 				status: "skipped",
-				reason: "nothing_to_repair",
+				reason: batch.pending_count > 0 || unknownCountIds.length > 0 ? "batch_disabled" : "nothing_to_repair",
+				batch,
 				totalCached: existingCompact.length,
 			}),
 			network_count_retry: {
@@ -273,36 +281,6 @@ if (requestedRepairCount === 0 && selectedUnknownCountIds.length === 0) {
 			},
 		},
 	);
-	console.log("Nothing to repair. Skipping Network cache update.");
-	process.exit(0);
-}
-if (MAX_REPAIR_IDS !== null && requestedRepairCount > MAX_REPAIR_IDS) {
-	await writeRepairMetadata(
-		{
-			...buildRepairMetadata({
-				entityType: "network",
-				mode: MODE,
-				month: MONTH,
-				audit,
-				auditFreshness,
-				maxRepairIds: MAX_REPAIR_IDS,
-				missingIds,
-				extraIds,
-				startedAt: OBSERVED_AT,
-				finishedAt: new Date().toISOString(),
-				status: "skipped",
-				reason: "max_repair_ids_exceeded",
-				totalCached: existingCompact.length,
-			}),
-			network_count_retry: {
-				candidates: unknownCountIds.length,
-				selected: 0,
-				deferred: unknownCountIds.length,
-				outcomes: [],
-			},
-		},
-	);
-	console.log(`Repair skipped: ${requestedRepairCount} exceeds MAX_REPAIR_IDS=${MAX_REPAIR_IDS}.`);
 	process.exit(0);
 }
 if (!TOKEN) throw new Error("Missing TMDB_BEARER_TOKEN");
@@ -331,11 +309,11 @@ const networkMap = new Map(
 		.map((network) => [Number(network.i), expandCompactNetwork(network)]),
 );
 const removed = [];
-for (const id of extraIds) {
+for (const id of batch.selected_extra) {
 	if (networkMap.delete(id)) removed.push(id);
 }
 const repair = await repairMissingLegacyRows({
-	ids: missingIds,
+	ids: batch.selected_missing,
 	dimension: CATALOGUE_DIMENSIONS.NETWORK_SERIES,
 	client,
 	observedAt: OBSERVED_AT,
@@ -367,7 +345,7 @@ await client.writeUsage({
 });
 if (
 	repair.allocationStopped ||
-	repair.outcomes.length !== missingIds.length ||
+	repair.outcomes.length !== batch.selected_missing.length ||
 	countRetry.allocationStopped ||
 	countRetry.outcomes.length !== selectedUnknownCountIds.length
 ) {
@@ -381,7 +359,7 @@ await fs.writeFile(CSV_PATH, toCsv(networks));
 const partialFailure =
 	hasRepairPartialFailure({
 		repair,
-		requestedMissingCount: missingIds.length,
+		requestedMissingCount: batch.selected_missing.length,
 	}) || countRetry.outcomes.some((outcome) => outcome.status === CATALOGUE_COUNT_STATUSES.FAILED);
 await writeRepairMetadata(
 	{
@@ -402,6 +380,7 @@ await writeRepairMetadata(
 			removed,
 			usage,
 			requestPlan,
+			batch,
 			totalCached: networks.length,
 		}),
 		network_count_retry: {
