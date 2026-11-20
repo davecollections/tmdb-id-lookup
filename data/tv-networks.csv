@@ -3049,7 +3049,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 5732,SABC 3,17,Johannesburg,ZA,,https://www.themoviedb.org/network/5732
 5733,WidCyber,2,,,,https://www.themoviedb.org/network/5733
 5734,Daewon Broadcasting,4,대한민국 서울특별시 마포구 월드컵북로56길 19,KR,,https://www.themoviedb.org/network/5734
-5735,Sky,14,,NZ,,https://www.themoviedb.org/network/5735
 5737,Marco Polo TV,3,,,,https://www.themoviedb.org/network/5737
 5738,Наше HD,1,,,,https://www.themoviedb.org/network/5738
 5741,РЕН-ТВ,3,,,,https://www.themoviedb.org/network/5741
@@ -4277,7 +4276,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7810,Wattpad,0,,,,https://www.themoviedb.org/network/7810
 7812,ABEMA Anime,1,"Shibuya, Tokyo",JP,,https://www.themoviedb.org/network/7812
 7813,Veeps,1,"Los Angeles, CA",US,,https://www.themoviedb.org/network/7813
-7815,Cineverse,2,,,,https://www.themoviedb.org/network/7815
 7816,Video Arts Television,0,,,,https://www.themoviedb.org/network/7816
 7817,Kufic Films B.V,0,,,,https://www.themoviedb.org/network/7817
 7818,P3 (DK),11,,,,https://www.themoviedb.org/network/7818
@@ -4822,7 +4820,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 8583,Viafree,14,"Stockholm, Sweden",SE,,https://www.themoviedb.org/network/8583
 8584,Jurnal TV,1,,,,https://www.themoviedb.org/network/8584
 8585,NT PLAY,4,Streaming ,BR,,https://www.themoviedb.org/network/8585
-8586,Freeview,1,,,,https://www.themoviedb.org/network/8586
 8587,TRAIN TV,2,"Shibuya, Tokyo",JP,,https://www.themoviedb.org/network/8587
 8589,Men At Play,0,,,,https://www.themoviedb.org/network/8589
 8591,MNC,0,,,,https://www.themoviedb.org/network/8591
@@ -5489,7 +5486,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9412,MotoGP Sports Entertainment Group,0,,,,https://www.themoviedb.org/network/9412
 9413,Dorna Sports,0,,,,https://www.themoviedb.org/network/9413
 9414,The RCAYGames Films,2,,,,https://www.themoviedb.org/network/9414
-9415,Skygo,1,,,,https://www.themoviedb.org/network/9415
 9416,Spellbound+,1,,,,https://www.themoviedb.org/network/9416
 9417,Realms,1,,,,https://www.themoviedb.org/network/9417
 9418,Astro Plus,1,,CA,,https://www.themoviedb.org/network/9418
@@ -5747,7 +5743,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9716,腾讯视频、优酷 、爱奇艺,0,,,,https://www.themoviedb.org/network/9716
 9717,腾讯视频,0,,,,https://www.themoviedb.org/network/9717
 9718,Trentino TV,1,,,,https://www.themoviedb.org/network/9718
-9719,https://youtube.com/@ch_bandal?si=zPCLQX0q6tqggGD8,1,,,,https://www.themoviedb.org/network/9719
 9720,Asianet Plus,1,,IN,,https://www.themoviedb.org/network/9720
 9721,VTV5,1,,,,https://www.themoviedb.org/network/9721
 9722,Do Drama,14,,MY,,https://www.themoviedb.org/network/9722
@@ -5757,7 +5752,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9726,سورية الدولية للإنتاج الفني,1,,,,https://www.themoviedb.org/network/9726
 9727,RTP Madeira,2,Funchal,PT,,https://www.themoviedb.org/network/9727
 9728,由昆明电视台,1,,,,https://www.themoviedb.org/network/9728
-9729,History,1,,PL,https://historytv.pl/,https://www.themoviedb.org/network/9729
+9729,History,1,,PL,,https://www.themoviedb.org/network/9729
 9730,FOX,1,,,,https://www.themoviedb.org/network/9730
 9731,TRT 1,1,,,,https://www.themoviedb.org/network/9731
 9732,TRT 1,1,,,,https://www.themoviedb.org/network/9732
@@ -5786,4 +5781,11 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9755,Travel Channel,1,,,,https://www.themoviedb.org/network/9755
 9756,RallyTV,1,,,,https://www.themoviedb.org/network/9756
 9757,pbs kids,1,,,,https://www.themoviedb.org/network/9757
-9758,Plex,0,,US,https://watch.plex.tv/me,https://www.themoviedb.org/network/9758
+9758,Plex,0,,US,,https://www.themoviedb.org/network/9758
+9759,Acorn TV,3,,CA,https://acorn.tv,https://www.themoviedb.org/network/9759
+9760,Acorn TV,4,,AU,https://acorn.tv,https://www.themoviedb.org/network/9760
+9761,Acorn TV,6,,GB,https://acorn.tv,https://www.themoviedb.org/network/9761
+9762,Sky Comedy,1,,NZ,,https://www.themoviedb.org/network/9762
+9763,SoHo,1,,NZ,,https://www.themoviedb.org/network/9763
+9764,Acorn TV,1,,NZ,https://acorn.tv,https://www.themoviedb.org/network/9764
+9765,Channel U,1,,GB,,https://www.themoviedb.org/network/9765
