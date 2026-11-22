@@ -5756,19 +5756,13 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9731,TRT 1,1,,,,https://www.themoviedb.org/network/9731
 9732,TRT 1,1,,,,https://www.themoviedb.org/network/9732
 9733,atv,1,,,,https://www.themoviedb.org/network/9733
-9734,TGRT,1,,,,https://www.themoviedb.org/network/9734
-9735,TGRT,1,,,,https://www.themoviedb.org/network/9735
 9736,TRT 1,1,,,,https://www.themoviedb.org/network/9736
-9737,TGRT,1,,,,https://www.themoviedb.org/network/9737
 9738,atv,1,,,,https://www.themoviedb.org/network/9738
-9739,TGRT,1,,,,https://www.themoviedb.org/network/9739
-9740,TGRT,1,,,,https://www.themoviedb.org/network/9740
 9741,Show TV,1,,,,https://www.themoviedb.org/network/9741
 9742,atv,1,,,,https://www.themoviedb.org/network/9742
 9743,Discovery,1,,,,https://www.themoviedb.org/network/9743
 9744,Show TV,1,,,,https://www.themoviedb.org/network/9744
 9745,Show TV,1,,,,https://www.themoviedb.org/network/9745
-9746,TGRT,1,,,,https://www.themoviedb.org/network/9746
 9747,atv,1,,,,https://www.themoviedb.org/network/9747
 9748,TRT 1,1,,,,https://www.themoviedb.org/network/9748
 9749,Show TV,1,,,,https://www.themoviedb.org/network/9749
@@ -5788,3 +5782,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9763,SoHo,1,,NZ,,https://www.themoviedb.org/network/9763
 9764,Acorn TV,1,,NZ,,https://www.themoviedb.org/network/9764
 9765,Channel U,1,,GB,,https://www.themoviedb.org/network/9765
+9766,Discovery+ (DE),0,,,,https://www.themoviedb.org/network/9766
+9767,Pluto TV,0,,,,https://www.themoviedb.org/network/9767
+9770,justwatch,0,,,,https://www.themoviedb.org/network/9770
+9771,Shortical,1,,,,https://www.themoviedb.org/network/9771
