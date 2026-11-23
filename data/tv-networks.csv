@@ -2932,7 +2932,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 5539,A+E Networks UK,4,,GB,,https://www.themoviedb.org/network/5539
 5540,Свэлл,1,,,,https://www.themoviedb.org/network/5540
 5541,ITV Central,7,,GB,,https://www.themoviedb.org/network/5541
-5542,BNN,1,,,,https://www.themoviedb.org/network/5542
 5543,큐허브,0,,,,https://www.themoviedb.org/network/5543
 5544,큐허브,0,,,,https://www.themoviedb.org/network/5544
 5545,Food Network,1,,IT,,https://www.themoviedb.org/network/5545
@@ -5657,7 +5656,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9610,福州二套影视频道,1,,,,https://www.themoviedb.org/network/9610
 9611,重庆原典文化传播有限责任公司 四方源创文化传播有限公司,1,,,,https://www.themoviedb.org/network/9611
 9612,江苏影视频道,1,,,,https://www.themoviedb.org/network/9612
-9613,Viewster,1,,,,https://www.themoviedb.org/network/9613
 9614,Powerpuff Films,0,,,,https://www.themoviedb.org/network/9614
 9615,CCTV Canal 9,1,,,,https://www.themoviedb.org/network/9615
 9616,湖南广播电视台电视剧频道,1,,,,https://www.themoviedb.org/network/9616
@@ -5758,14 +5756,10 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9733,atv,1,,,,https://www.themoviedb.org/network/9733
 9736,TRT 1,1,,,,https://www.themoviedb.org/network/9736
 9738,atv,1,,,,https://www.themoviedb.org/network/9738
-9741,Show TV,1,,,,https://www.themoviedb.org/network/9741
 9742,atv,1,,,,https://www.themoviedb.org/network/9742
 9743,Discovery,1,,,,https://www.themoviedb.org/network/9743
-9744,Show TV,1,,,,https://www.themoviedb.org/network/9744
-9745,Show TV,1,,,,https://www.themoviedb.org/network/9745
 9747,atv,1,,,,https://www.themoviedb.org/network/9747
 9748,TRT 1,1,,,,https://www.themoviedb.org/network/9748
-9749,Show TV,1,,,,https://www.themoviedb.org/network/9749
 9750,FOX,1,,,,https://www.themoviedb.org/network/9750
 9751,Investigation Discovery,1,,,,https://www.themoviedb.org/network/9751
 9752,Animal Planet,1,,,,https://www.themoviedb.org/network/9752
@@ -5786,3 +5780,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9767,Pluto TV,0,,,,https://www.themoviedb.org/network/9767
 9770,justwatch,0,,,,https://www.themoviedb.org/network/9770
 9771,Shortical,1,,,,https://www.themoviedb.org/network/9771
+9772,Canal+ 4K Ultra HD,1,,PL,,https://www.themoviedb.org/network/9772
+9773,Warhammer TV,0,,,,https://www.themoviedb.org/network/9773
+9774,Warhammer TV,0,,,,https://www.themoviedb.org/network/9774
