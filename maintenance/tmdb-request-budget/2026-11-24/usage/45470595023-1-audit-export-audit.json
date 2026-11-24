@@ -1,0 +1,35 @@
+{
+  "schema_version": 2,
+  "reservation_id": "45470595023-1-audit-export",
+  "reservation_sha256": "20d9f876344d6af9d60788cfdec3aa55e05bad28572f259205672ba72bcc1987",
+  "utc_date": "2026-11-24",
+  "planned_month": "2026-11",
+  "workflow": "Audit TMDB Export Coverage",
+  "run_id": "45470595023",
+  "run_attempt": "1",
+  "job": "audit-catalogues",
+  "allocation_key": "audit_export",
+  "request_class": "audit-export",
+  "target_dimension": "all",
+  "allowance": 14,
+  "attempts_used": 2,
+  "unused_allowance": 12,
+  "first_attempt_at": "2026-11-24T19:29:06.875Z",
+  "last_attempt_at": "2026-11-24T19:29:08.162Z",
+  "by_host": {
+    "api.themoviedb.org": 0,
+    "files.tmdb.org": 2
+  },
+  "by_status_or_outcome": {
+    "200": 2
+  },
+  "retries": 0,
+  "datasets": [
+    "companies",
+    "networks"
+  ],
+  "targets": {
+    "companies": "sha256:03cbb60229a379be7dcdabd9ba9b1cac1d92dd17fe3b8ee2ccdbc4b927e1f727",
+    "networks": "sha256:fffc49d6e551d56874a658a40f1936e252ca6321f5827c59ebce414a7c2509d9"
+  }
+}
