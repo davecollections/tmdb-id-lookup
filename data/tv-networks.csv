@@ -5787,9 +5787,16 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9776,Ninateka,1,Warsaw,PL,,https://www.themoviedb.org/network/9776
 9777,KidsCo,1,,,,https://www.themoviedb.org/network/9777
 9778,CANAL+ 360,1,,PL,,https://www.themoviedb.org/network/9778
-9779,CANAL+,39,Warsaw,PL,https://www.canalplus.com/pl/,https://www.themoviedb.org/network/9779
+9779,CANAL+,39,Warsaw,PL,,https://www.themoviedb.org/network/9779
 9780,CANAL+ Domo,1,Warsaw,PL,,https://www.themoviedb.org/network/9780
-9781,TVP World,1,Warsaw,,https://tvpworld.com/,https://www.themoviedb.org/network/9781
+9781,TVP World,1,Warsaw,,,https://www.themoviedb.org/network/9781
 9782,ديالا للإنتاج الفني,1,,,,https://www.themoviedb.org/network/9782
 9783,جولدن لاين للإنتاج والتوزيع الفني,1,,,,https://www.themoviedb.org/network/9783
 9784,WUSA9+,1,,US,,https://www.themoviedb.org/network/9784
+9785,即梦,0,,,,https://www.themoviedb.org/network/9785
+9786,即梦AI,0,,,,https://www.themoviedb.org/network/9786
+9787,CANAL+ Kuchnia,1,Warsaw,PL,,https://www.themoviedb.org/network/9787
+9788,K-T.V. (GR),1,,,,https://www.themoviedb.org/network/9788
+9789,Remix,0,,,,https://www.themoviedb.org/network/9789
+9790,DETT Network,1,,,,https://www.themoviedb.org/network/9790
+9791,DailyMotion,1,,,,https://www.themoviedb.org/network/9791
