@@ -2098,7 +2098,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 3668,UOL. Doc,1,,,,https://www.themoviedb.org/network/3668
 3674,RMC Story,75,Paris,FR,,https://www.themoviedb.org/network/3674
 3682,Telfaz11,1,,SA,,https://www.themoviedb.org/network/3682
-3683,Universal Television,1,,,,https://www.themoviedb.org/network/3683
 3685,d Anime Store,9,,JP,,https://www.themoviedb.org/network/3685
 3687,Quest Red ,4,,GB,,https://www.themoviedb.org/network/3687
 3688,A&E,4,,AU,,https://www.themoviedb.org/network/3688
@@ -5353,7 +5352,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9251,"All-Union Film Festival ""Debut""",1,"Moscow, RSFSR, USSR",SU,,https://www.themoviedb.org/network/9251
 9252,tvp vod,0,,,,https://www.themoviedb.org/network/9252
 9253,Sereal+,6,China,CN,,https://www.themoviedb.org/network/9253
-9254,rtp1,0,,,,https://www.themoviedb.org/network/9254
 9256,bravotv.com,1,,,,https://www.themoviedb.org/network/9256
 9257,Nebula,0,,,,https://www.themoviedb.org/network/9257
 9258,Kanal D2,1,,RO,,https://www.themoviedb.org/network/9258
@@ -5394,7 +5392,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9299,BBC Radio 4,1,,,,https://www.themoviedb.org/network/9299
 9302,Teleclub,1,"Moscow, Russia",RU,,https://www.themoviedb.org/network/9302
 9303,Newgrounds,4,,US,,https://www.themoviedb.org/network/9303
-9304,Sony,1,,,,https://www.themoviedb.org/network/9304
 9305,Telecinco,0,,,,https://www.themoviedb.org/network/9305
 9306,YouTube Red,27,,,,https://www.themoviedb.org/network/9306
 9309,Mythical Society,6,"Burbank, California",US,,https://www.themoviedb.org/network/9309
@@ -5590,7 +5587,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9534,Action 24 (GR),1,,,,https://www.themoviedb.org/network/9534
 9535,EightbornV,1,,,,https://www.themoviedb.org/network/9535
 9536,Clipply POP,1,,TW,,https://www.themoviedb.org/network/9536
-9537,Rtp play,0,,,,https://www.themoviedb.org/network/9537
 9538,manoramaMAX,4,"Kottayam, Kerala, India",IN,,https://www.themoviedb.org/network/9538
 9539,Zeevision,1,,IR,,https://www.themoviedb.org/network/9539
 9540,HEY Tv,12,,PK,,https://www.themoviedb.org/network/9540
@@ -5612,7 +5608,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9557,TV Informer,1,,RS,,https://www.themoviedb.org/network/9557
 9558,SoonShot,3,,,,https://www.themoviedb.org/network/9558
 9559,Dreams Reset Studio,1,,BR,,https://www.themoviedb.org/network/9559
-9560,Ian Channel (US),0,,,,https://www.themoviedb.org/network/9560
 9561,Ideh Nama,1,,,,https://www.themoviedb.org/network/9561
 9562,Discovery,1,,IN,,https://www.themoviedb.org/network/9562
 9563,Meta,1,"Menlo Park, California, USA",US,,https://www.themoviedb.org/network/9563
@@ -5800,3 +5795,13 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9789,Remix,0,,,,https://www.themoviedb.org/network/9789
 9790,DETT Network,1,,,,https://www.themoviedb.org/network/9790
 9791,DailyMotion,1,,,,https://www.themoviedb.org/network/9791
+9792,DOWNTOWN+,1,,JP,https://downtownplus.com/,https://www.themoviedb.org/network/9792
+9793,Geo,0,,,,https://www.themoviedb.org/network/9793
+9794,MySpace TV,1,,,,https://www.themoviedb.org/network/9794
+9795,BLN TV,2,,,,https://www.themoviedb.org/network/9795
+9796,HTV Network,1,,,,https://www.themoviedb.org/network/9796
+9797,MNC TV,1,,,,https://www.themoviedb.org/network/9797
+9798,UBA Network,1,,,,https://www.themoviedb.org/network/9798
+9799,KTV Network,2,,,,https://www.themoviedb.org/network/9799
+9800,bln real1ty,2,,,,https://www.themoviedb.org/network/9800
+9801,Ultimate Television (UTV),1,,,,https://www.themoviedb.org/network/9801
