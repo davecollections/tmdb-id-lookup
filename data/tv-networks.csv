@@ -4243,7 +4243,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 7754,Mojang Studios,0,,,,https://www.themoviedb.org/network/7754
 7758,Sad House,0,,,,https://www.themoviedb.org/network/7758
 7762,ChiefChrisEnt Studios,0,,,,https://www.themoviedb.org/network/7762
-7765,rednote,13,,CN,,https://www.themoviedb.org/network/7765
 7769,Barça One,5,"Barcelona, Spain",ES,,https://www.themoviedb.org/network/7769
 7770,TVP Seriale,0,"J. P. Woronicza 17, 00-999 Warszawa",PL,,https://www.themoviedb.org/network/7770
 7771,HOY,1,,,,https://www.themoviedb.org/network/7771
@@ -5312,7 +5311,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9202,Saina play,1,"Kochi, Kerala, India",IN,,https://www.themoviedb.org/network/9202
 9204,MADACY HOME VIDEO,0,,,,https://www.themoviedb.org/network/9204
 9205,Hiru TV,10,"Colombo, Western Province",LK,,https://www.themoviedb.org/network/9205
-9206,https://www.bukids.com/32018.html,1,,,,https://www.themoviedb.org/network/9206
 9207,Melolo,9,Singapore,CN,,https://www.themoviedb.org/network/9207
 9209,ZiggoSport.nl,1,,NL,,https://www.themoviedb.org/network/9209
 9210,蒋明希,0,,,,https://www.themoviedb.org/network/9210
@@ -5592,7 +5590,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9540,HEY Tv,12,,PK,,https://www.themoviedb.org/network/9540
 9541,Raipe Tv,1,,BR,,https://www.themoviedb.org/network/9541
 9542,blue Zoom,1,,CH,,https://www.themoviedb.org/network/9542
-9543,https://ru.kinorium.com/2806167/,1,,,,https://www.themoviedb.org/network/9543
 9544,ARTE,1,,,,https://www.themoviedb.org/network/9544
 9545,延边卫视,1,,,,https://www.themoviedb.org/network/9545
 9546,Dup,0,,,,https://www.themoviedb.org/network/9546
@@ -5655,8 +5652,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9615,CCTV Canal 9,1,,,,https://www.themoviedb.org/network/9615
 9616,湖南广播电视台电视剧频道,1,,,,https://www.themoviedb.org/network/9616
 9617,TROS,0,,,,https://www.themoviedb.org/network/9617
-9618,TROS,1,,,,https://www.themoviedb.org/network/9618
-9619,TROS,1,,,,https://www.themoviedb.org/network/9619
 9620,TV Liberal,2,"Belém, Pará - Brasil",BR,,https://www.themoviedb.org/network/9620
 9621,werkself.tv,1,,,,https://www.themoviedb.org/network/9621
 9622,UltraBox+,1,,,,https://www.themoviedb.org/network/9622
@@ -5671,7 +5666,6 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9632,TPA,1,"Luanda, Angola",AO,,https://www.themoviedb.org/network/9632
 9633,MC Producciones,1,San Isidro Buenos Aires,AR,,https://www.themoviedb.org/network/9633
 9634,русский роман,0,,,,https://www.themoviedb.org/network/9634
-9635,https://superstartv.rs,0,,,,https://www.themoviedb.org/network/9635
 9637,Patreon,0,,,,https://www.themoviedb.org/network/9637
 9638,Disney Channel(TW),1,臺灣台北市中正區襄陽路1號(舊址)[1] 台北市內湖區堤頂大道2段183號富邦東京企業總部大樓11樓（福斯傳媒集團台北內湖大樓）(現址),TW,,https://www.themoviedb.org/network/9638
 9640,Cctv8,0,,,,https://www.themoviedb.org/network/9640
@@ -5795,7 +5789,7 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9789,Remix,0,,,,https://www.themoviedb.org/network/9789
 9790,DETT Network,1,,,,https://www.themoviedb.org/network/9790
 9791,DailyMotion,1,,,,https://www.themoviedb.org/network/9791
-9792,DOWNTOWN+,1,,JP,https://downtownplus.com/,https://www.themoviedb.org/network/9792
+9792,DOWNTOWN+,1,,JP,,https://www.themoviedb.org/network/9792
 9793,Geo,0,,,,https://www.themoviedb.org/network/9793
 9794,MySpace TV,1,,,,https://www.themoviedb.org/network/9794
 9795,BLN TV,2,,,,https://www.themoviedb.org/network/9795
@@ -5805,3 +5799,9 @@ id,name,titles_count,headquarters,origin_country,homepage,tmdb_url
 9799,KTV Network,2,,,,https://www.themoviedb.org/network/9799
 9800,bln real1ty,2,,,,https://www.themoviedb.org/network/9800
 9801,Ultimate Television (UTV),1,,,,https://www.themoviedb.org/network/9801
+9802,OSN,0,,,,https://www.themoviedb.org/network/9802
+9803,YouTube,1,,,,https://www.themoviedb.org/network/9803
+9804,YouTube,1,,,,https://www.themoviedb.org/network/9804
+9805,neo von ARD und ZDF,0,,DE,,https://www.themoviedb.org/network/9805
+9806,info von ARD und ZDF,0,,DE,,https://www.themoviedb.org/network/9806
+9807,Sky Comedy (DE),1,,,,https://www.themoviedb.org/network/9807
